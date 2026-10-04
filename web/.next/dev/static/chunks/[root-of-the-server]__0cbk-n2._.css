@@ -446,14 +446,6 @@
 @layer components;
 
 @layer utilities {
-  .visible {
-    visibility: visible;
-  }
-
-  .block {
-    display: block;
-  }
-
   .flex {
     display: flex;
   }
