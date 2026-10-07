@@ -18,7 +18,7 @@ ml/node_modules
 /coverage
 
 # next.js
-web/src/.next/
+web/.next/
 /out/
 
 # production
