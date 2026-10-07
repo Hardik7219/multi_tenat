@@ -2,24 +2,27 @@ import mongoose, { Schema } from "mongoose";
 
 
 const userSchema = new Schema({
-    username:String,
-    email:String,
-    authId:String,
-    avatar:{
-        type:String,
-        default:""
+    username: String,
+    email: String,
+    authId: String,
+    password: String,
+    avatar: {
+        type: String,
+        default: ""
     },
-    role:{
-        type:String,
-        enum:['admin','customer'],
-        default:'customer'
+    role: {
+        type: String,
+        enum: ['organazation', 'customer'],
+        default: 'customer'
     },
-    tenateId:{
-        type: Schema.Types.ObjectId,
-        ref:"Tenats"
-    }
-},{
-    timestamps:true
-})  
+    tenantId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Tenancy",
+        required: true,
+        index: true,
+    },
+}, {
+    timestamps: true
+})
 
-export const User=mongoose.model('User',userSchema);
+export const User = mongoose.model('User', userSchema);

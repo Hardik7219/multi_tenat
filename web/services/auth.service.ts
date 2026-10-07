@@ -5,21 +5,23 @@ interface UserDetail {
     email: string,
     password: string
 }
-export async function signupUser({ username, email, password }: UserDetail) {
+export async function signupUser(formData:UserDetail) {
+    const url=process.env.BACKEND_URL || "http://localhost:2000";    
     const response = await fetch(
-        `${process.env.BACKEND_URL}}/api/auth/signup`,
+        `${url}/api/auth/signup`,
         {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                username,
-                email,
-                password,
+                username:formData.username,
+                email:formData.email,
+                password:formData.password
             }),
         }
     );
+    console.log(response);
 
     if (!response.ok) {
         const error = await response.json();
@@ -28,17 +30,17 @@ export async function signupUser({ username, email, password }: UserDetail) {
             error.message || "Signup failed"
         );
     }
-
+    console.log(response)
     return response.json();
 }
 
 
 export async function signInUser(email: string,
     password: string
-) {
+) {    
     return signIn("credentials", {
         email,
         password,
-        redirectTo: "/dashboard",
+        redirect: false,
     });
 }

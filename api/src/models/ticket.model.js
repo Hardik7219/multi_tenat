@@ -1,12 +1,85 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose from "mongoose";
 
+const ticketSchema = new mongoose.Schema(
+    {
+        tenantId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Tenancy",
+            required: true,
+            index: true,
+        },
 
-const tenatSchema = new Schema({
-    subject:String,
-    userId:{
-        type:Schema.Types.ObjectId,
-        ref:Users
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
+
+        assignedTo: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
+
+        title: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+
+        description: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+
+        status: {
+            type: String,
+            enum: [
+                "open",
+                "in_progress",
+                "resolved",
+                "closed"
+            ],
+            default: "open",
+            index: true,
+        },
+
+        priority: {
+            type: String,
+            enum: [
+                "low",
+                "medium",
+                "high",
+                "urgent"
+            ],
+            default: "medium",
+        },
+
+        category: {
+            type: String,
+            trim: true,
+            default: null,
+        },
+
+        tags: {
+            type: [String],
+            default: [],
+        },
+
+        resolvedAt: {
+            type: Date,
+            default: null,
+        },
+
+        closedAt: {
+            type: Date,
+            default: null,
+        },
+    },
+    {
+        timestamps: true,
     }
-},{timestamps:true})  
+);
 
-export const Tenat=mongoose.model('Tenat',tenatSchema);
+export const Ticket = mongoose.model("Ticket", ticketSchema);

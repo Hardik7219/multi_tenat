@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { signInUser } from "@/services/auth.service";
 
 export default function LoginForm() {
+    const router = useRouter();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -16,10 +19,21 @@ export default function LoginForm() {
         setLoading(true);
 
         try {
-            await signInUser(email, password);
+            const result = await signInUser(email, password);
+
+            console.log("Auth result:", result);
+
+            if (result?.error) {
+                setError("Invalid email or password");
+                return;
+            }
+
+            router.push("/dashboard");
+            router.refresh();
+
         } catch (error) {
-            console.error(error);
-            setError("Invalid email or password");
+            console.error("LOGIN ERROR:", error);
+            setError("Something went wrong");
         } finally {
             setLoading(false);
         }
