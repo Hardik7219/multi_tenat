@@ -66,7 +66,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // This runs when the user first logs in
       if (user) {
         token.id = user.id;
-        token.username = user.name;
+        token.username = user.name as string;
         token.role = user.role;
         token.tenantId = user.tenantId;
         token.accessToken = user.accessToken;
@@ -76,7 +76,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
 
     async session({ session, token }) {
-      session.user.id = token.id;
+      session.user.id = token.id as string;
       session.user.username = token.username;
       session.user.role = token.role;
       session.user.tenantId = token.tenantId;

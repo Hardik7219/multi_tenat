@@ -7,6 +7,12 @@ export async function createTicket(req, res) {
         const userId = req.user.id;
         const tenantId = req.user.tenantId;
 
+        if (!tenantId) {
+            return res.status(400).json({
+                message: "You don't belong to any organization",
+            });
+        }
+
         if (!title || !description) {
             return res.status(400).json({
                 message: "Title and description are required",
@@ -41,6 +47,12 @@ export async function fetchTicket(req, res) {
         const { ticketId } = req.params;
         const tenantId = req.user.tenantId;
 
+        if (!tenantId) {
+            return res.status(400).json({
+                message: "You don't belong to any organization",
+            });
+        }
+
         const ticket = await Ticket.findOne({
             _id: ticketId,
             tenantId,
@@ -68,14 +80,25 @@ export async function fetchTicket(req, res) {
 
 export async function fetchAllTickets(req, res) {
     try {
-        const tenantId = req.user.tenantId;
-
-        const tickets = await Ticket.find({
-            tenantId,
-        }).sort({
-            createdAt: -1,
-        });
-
+        const tenantId = req.user.tenantId;        
+        const userId= req.user.id
+        if (!tenantId) {
+            return res.status(400).json({
+                message: "You don't belong to any organization",
+            });
+        }
+        if(tenantId)
+        {
+            const tickets = await Ticket.find({
+                tenantId,
+            }).sort({
+                createdAt: -1,
+            });   
+        }
+        else
+        {
+            const ticket= await Ticket.find({createdBy:userId}).sort({createdAt:-1})
+        }
         return res.status(200).json({
             tickets,
         });
@@ -94,6 +117,12 @@ export async function deleteTicket(req, res) {
     try {
         const { ticketId } = req.params;
         const tenantId = req.user.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                message: "You don't belong to any organization",
+            });
+        }
 
         const ticket = await Ticket.findOneAndDelete({
             _id: ticketId,
@@ -126,6 +155,12 @@ export async function updateTicket(req, res) {
         const { title, description, priority, status } = req.body;
 
         const tenantId = req.user.tenantId;
+
+        if (!tenantId) {
+            return res.status(400).json({
+                message: "You don't belong to any organization",
+            });
+        }
 
         const ticket = await Ticket.findOneAndUpdate(
             {

@@ -13,6 +13,12 @@ export async function createTenancy(req, res) {
             });
         }
 
+        if (req.user.tenantId) {
+            return res.status(400).json({
+                message: "User already belongs to an organization",
+            });
+        }
+
         const existingTenancy = await Tenancy.findOne({ slug });
 
         if (existingTenancy) {
@@ -57,6 +63,12 @@ export async function fetchTenancy(req, res) {
     try {
         const tenantId = req.user.tenantId;
 
+        if (!tenantId) {
+            return res.status(400).json({
+                message: "You don't belong to any organization",
+            });
+        }
+
         const tenancy = await Tenancy.findById(tenantId);
 
         if (!tenancy) {
@@ -83,6 +95,18 @@ export async function fetchTenancy(req, res) {
 export async function updateTenancy(req, res) {
     try {
         const tenantId = req.user.tenantId;
+
+        if (req.user.role !== "owner" && req.user.role !== "organization") {
+            return res.status(403).json({
+                message: "Unauthorized to update organization",
+            });
+        }
+
+        if (!tenantId) {
+            return res.status(400).json({
+                message: "You don't belong to any organization",
+            });
+        }
 
         const { name, slug, plan, status } = req.body;
 
@@ -126,6 +150,18 @@ export async function deleteTenancy(req, res) {
     try {
         const tenantId = req.user.tenantId;
 
+        if (req.user.role !== "owner" && req.user.role !== "organization") {
+            return res.status(403).json({
+                message: "Unauthorized to delete organization",
+            });
+        }
+
+        if (!tenantId) {
+            return res.status(400).json({
+                message: "You don't belong to any organization",
+            });
+        }
+
         const tenancy = await Tenancy.findByIdAndDelete(tenantId);
 
         if (!tenancy) {
@@ -139,6 +175,9 @@ export async function deleteTenancy(req, res) {
             {
                 $unset: {
                     tenantId: 1,
+                },
+                $set: {
+                    role: "customer",
                 },
             }
         );

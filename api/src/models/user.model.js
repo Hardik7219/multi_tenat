@@ -18,7 +18,7 @@ const userSchema = new Schema({
     tenantId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Tenancy",
-        required: true,
+        required: false,
         index: true,
     },
 }, {
