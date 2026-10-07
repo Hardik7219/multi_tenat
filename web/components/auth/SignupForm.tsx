@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { signupUser } from '@/services/auth.service'
+import { signupUser } from '@/services/apiServices/auth.service'
 import Link from 'next/link' // Assuming you're using Next.js
 
 export default function SignupPage() {

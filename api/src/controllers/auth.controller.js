@@ -1,5 +1,6 @@
 import { User } from "../models/user.model.js";
 import bcrypt from "bcrypt";
+import { generateAccessToken } from "../utils/jwtTokenGenerator.js";
 
 export const createUser = async (req, res) => {
     try {
