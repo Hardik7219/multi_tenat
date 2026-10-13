@@ -3,8 +3,13 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Shield, Zap } from "lucide-react";
 import { Button } from "../shared/ui/Button";
+import Loader from "@/shared/ui/Loader";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+
 
 export default function LandingPage() {
+    const {userData,loading} = useAuth();
+    if(loading) return <Loader></Loader>
     return (
         <main className="flex-1 flex flex-col overflow-hidden">
             <section className="relative px-6 pt-32 pb-20 md:pt-48 md:pb-32 flex flex-col items-center justify-center text-center">
@@ -22,7 +27,21 @@ export default function LandingPage() {
                 <p className="mt-8 max-w-2xl text-lg text-white/50 sm:text-xl">
                     A multi-tenant workspace built for speed, scale, and seamless customer support experiences. No complex setups, just clean productivity.
                 </p>
-
+            {userData  && (
+                <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
+                    <Link href="/profile">
+                        <Button size="lg" className="h-14 px-8 text-base shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                            Start <ArrowRight size={18} className="ml-2" />
+                        </Button>
+                    </Link>
+                    <Link href="/dashboard">
+                        <Button variant="ghost" size="lg" className="h-14 px-8 text-base">
+                            Go to workspace
+                        </Button>
+                    </Link>
+                </div>
+        ) }
+        {!userData && (
                 <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
                     <Link href="/signup">
                         <Button size="lg" className="h-14 px-8 text-base shadow-[0_0_30px_rgba(255,255,255,0.2)]">
@@ -35,6 +54,8 @@ export default function LandingPage() {
                         </Button>
                     </Link>
                 </div>
+        )}
+
             </section>
 
             <section className="border-y border-white/10 bg-white/[0.02] py-24">
@@ -77,3 +98,7 @@ export default function LandingPage() {
         </main>
     );
 }
+function async() {
+    throw new Error("Function not implemented.");
+}
+

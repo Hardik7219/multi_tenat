@@ -47,3 +47,11 @@ export interface CreateTenantData {
     name: string;
     slug: string;
 }
+export interface UserData {
+    id: string,
+    name: string,
+    email: string,
+    role: string | null,
+    tenantId: string | null,
+    accessToken: string | null,
+}
