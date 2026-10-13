@@ -13,7 +13,7 @@ export default function LandingPage() {
     return (
         <main className="flex-1 flex flex-col overflow-hidden">
             <section className="relative px-6 pt-32 pb-20 md:pt-48 md:pb-32 flex flex-col items-center justify-center text-center">
-                <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/10 via-[#050505] to-[#050505]"></div>
+                <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-white/10 via-[#050505] to-[#050505]"></div>
                 
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-white/80 backdrop-blur-md mb-8 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
                     <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
@@ -21,7 +21,7 @@ export default function LandingPage() {
                 </div>
 
                 <h1 className="max-w-4xl text-5xl font-extrabold tracking-tight sm:text-7xl">
-                    Manage support for all your <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-500">tenants in one place.</span>
+                    Manage support for all your <span className="text-transparent bg-clip-text bg-linear-to-r from-gray-200 to-gray-500">tenants in one place.</span>
                 </h1>
 
                 <p className="mt-8 max-w-2xl text-lg text-white/50 sm:text-xl">
@@ -58,7 +58,7 @@ export default function LandingPage() {
 
             </section>
 
-            <section className="border-y border-white/10 bg-white/[0.02] py-24">
+            <section className="border-y border-white/10 bg-white/2 py-24">
                 <div className="mx-auto max-w-7xl px-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center md:text-left">
                         <div className="flex flex-col items-center md:items-start gap-4">
@@ -98,7 +98,5 @@ export default function LandingPage() {
         </main>
     );
 }
-function async() {
-    throw new Error("Function not implemented.");
-}
+
 

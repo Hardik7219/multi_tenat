@@ -3,12 +3,6 @@ import { auth } from "@/auth";
 
 export async function getCurrentUserSession() {
     const session = await auth();
-
-    console.log("========== SESSION ==========");
-    console.log(session);
-    console.log("USER:", session?.user);
-    console.log("=============================");
-
     return session?.user ?? null;
 }
 

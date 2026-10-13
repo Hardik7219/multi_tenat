@@ -36,7 +36,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         );
 
         if (!response.ok) {
-          return null;
+         return null
         }
 
         const user = await response.json();
