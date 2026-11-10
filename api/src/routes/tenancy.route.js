@@ -5,6 +5,7 @@ import {
     fetchTenancy,
     updateTenancy,
     deleteTenancy,
+    fetchTenancies,
 } from "../controllers/tenancy.controller.js";
 
 import { authenticate } from "../middleware/auth.middleware.js";
@@ -13,7 +14,9 @@ const router = express.Router();
 
 router.post("/", authenticate, createTenancy);
 
-router.get("/", authenticate, fetchTenancy);
+router.get("/discover", authenticate, fetchTenancies);
+
+router.get("/:id", authenticate, fetchTenancy);
 
 router.patch("/", authenticate, updateTenancy);
 

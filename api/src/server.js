@@ -13,8 +13,8 @@ const app = express();
 
 app.use(express.json());
 app.use(cors({
-    origin:"http://localhost:3000",
-    credentials:true
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    credentials: true
 }))
 
 
@@ -28,8 +28,8 @@ await connectDb();
 
 app.use('/api/auth',authRoute)
 app.use("/api/tickets", ticketRoutes);
-app.use("/api/tenats", tenateRoutes);
+app.use("/api/tenants", tenateRoutes);
 
-app.listen(2000,()=>{
+app.listen(process.env.PORT,()=>{
     console.log("runnning")
 })

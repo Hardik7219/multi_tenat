@@ -8,25 +8,22 @@ const ticketSchema = new mongoose.Schema(
             required: true,
             index: true,
         },
-
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: true,
+            index: true,
         },
-
         assignedTo: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             default: null,
         },
-
         title: {
             type: String,
             required: true,
             trim: true,
         },
-
         description: {
             type: String,
             required: true,
@@ -81,5 +78,6 @@ const ticketSchema = new mongoose.Schema(
         timestamps: true,
     }
 );
+ticketSchema.index({ tenantId: 1, requesterId: 1 });
 
 export const Ticket = mongoose.model("Ticket", ticketSchema);

@@ -44,6 +44,7 @@ export async function createTicket(req, res) {
 
 export async function fetchTicket(req, res) {
     try {
+
         const { ticketId } = req.params;
         const tenantId = req.user.tenantId;
 
@@ -80,35 +81,22 @@ export async function fetchTicket(req, res) {
 
 export async function fetchAllTickets(req, res) {
     try {
-        const tenantId = req.user.tenantId;        
-        const userId= req.user.id
-        if (!tenantId) {
-            return res.status(400).json({
-                message: "You don't belong to any organization",
-            });
-        }
-        if(tenantId)
-        {
-            const tickets = await Ticket.find({
-                tenantId,
-            }).sort({
-                createdAt: -1,
-            });   
-        }
-        else
-        {
-            const ticket= await Ticket.find({createdBy:userId}).sort({createdAt:-1})
-        }
-        return res.status(200).json({
-            tickets,
-        });
+        
+        const tenantId = req.user.tenantId;
+        const userId = req.user.id;
 
+        let tickets;
+
+        if (tenantId) {
+            tickets = await Ticket.find({ tenantId }).sort({ createdAt: -1 });
+        } else {
+            tickets = await Ticket.find({ createdBy: userId }).sort({ createdAt: -1 });
+        }
+
+        return res.status(200).json({ tickets });
     } catch (error) {
         console.error("FETCH ALL TICKETS ERROR:", error);
-
-        return res.status(500).json({
-            message: "Failed to fetch tickets",
-        });
+        return res.status(500).json({ message: "Failed to fetch tickets" });
     }
 }
 

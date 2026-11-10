@@ -36,7 +36,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         );
 
         if (!response.ok) {
-         return null
+          return null
         }
 
         const user = await response.json();
@@ -63,7 +63,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
   callbacks: {
     async jwt({ token, user }) {
-      // This runs when the user first logs in
       if (user) {
         token.id = user.id;
         token.username = user.name as string;
@@ -80,7 +79,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       session.user.username = token.username;
       session.user.role = token.role;
       session.user.tenantId = token.tenantId;
-
+      session.user.accessToken = token.accessToken;
       return session;
     },
   },

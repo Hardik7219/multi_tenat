@@ -14,6 +14,7 @@ declare module "next-auth" {
       username?: string;
       role?: string;
       tenantId?: string | null;
+      accessToken?: string;
     } & DefaultSession["user"];
   }
 }

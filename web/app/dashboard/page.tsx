@@ -44,7 +44,7 @@ export default function DashboardPage() {
                         <p className="text-white/50 mt-1">Here is what is happening in your workspace today.</p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Link href="/tenats">
+                        <Link href="/tenants">
                             <Button variant="secondary">Manage Workspace</Button>
                         </Link>
                         <Link href="/tickets">

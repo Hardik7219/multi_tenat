@@ -32,6 +32,7 @@ export interface UpdateTicketData {
     status?: TicketStatus;
 }
 
+
 export interface Tenant {
     _id: string;
     name: string;
@@ -41,7 +42,9 @@ export interface Tenant {
     plan: "free" | "pro" | "enterprise";
     createdAt: string;
     updatedAt: string;
+    createdBy?: string;
 }
+
 
 export interface CreateTenantData {
     name: string;

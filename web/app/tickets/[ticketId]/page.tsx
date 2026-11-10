@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useTicket } from "../../../features/tickets/hooks/useTicket";
+import { useTickets } from "../../../features/tickets/hooks/useTickets";
 import { Card } from "../../../shared/ui/Card";
 import { Button } from "../../../shared/ui/Button";
 import { ArrowLeft, Calendar, User, Trash2 } from "lucide-react";
@@ -14,7 +14,7 @@ export default function TicketDetailsPage() {
     const router = useRouter();
     const ticketId = params.ticketId as string;
     
-    const { ticket, loading, error, updateTicket, deleteTicket } = useTicket(ticketId);
+    const { ticket, loading, error, updateTicket, deleteTicket } = useTickets(ticketId);
     const [updating, setUpdating] = useState(false);
 
     if (loading) {
