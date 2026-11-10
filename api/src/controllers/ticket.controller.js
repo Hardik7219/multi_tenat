@@ -2,16 +2,11 @@ import { Ticket } from "../models/ticket.model.js";
 
 export async function createTicket(req, res) {
     try {
-        const { title, description, priority } = req.body;
-
+        const { title, description, priority ,tenantId} = req.body;
+        console.log(tenantId);
+        
         const userId = req.user.id;
-        const tenantId = req.user.tenantId;
 
-        if (!tenantId) {
-            return res.status(400).json({
-                message: "You don't belong to any organization",
-            });
-        }
 
         if (!title || !description) {
             return res.status(400).json({
@@ -20,11 +15,11 @@ export async function createTicket(req, res) {
         }
 
         const ticket = await Ticket.create({
+            tenantId,
             title,
             description,
             priority,
             createdBy: userId,
-            tenantId,
         });
 
         return res.status(201).json({
@@ -46,17 +41,9 @@ export async function fetchTicket(req, res) {
     try {
 
         const { ticketId } = req.params;
-        const tenantId = req.user.tenantId;
-
-        if (!tenantId) {
-            return res.status(400).json({
-                message: "You don't belong to any organization",
-            });
-        }
 
         const ticket = await Ticket.findOne({
             _id: ticketId,
-            tenantId,
         });
 
         if (!ticket) {
@@ -82,17 +69,11 @@ export async function fetchTicket(req, res) {
 export async function fetchAllTickets(req, res) {
     try {
         
-        const tenantId = req.user.tenantId;
         const userId = req.user.id;
 
-        let tickets;
-
-        if (tenantId) {
-            tickets = await Ticket.find({ tenantId }).sort({ createdAt: -1 });
-        } else {
-            tickets = await Ticket.find({ createdBy: userId }).sort({ createdAt: -1 });
-        }
-
+        const tickets= await Ticket.find({
+            createdBy:userId
+        })        
         return res.status(200).json({ tickets });
     } catch (error) {
         console.error("FETCH ALL TICKETS ERROR:", error);
@@ -104,13 +85,6 @@ export async function fetchAllTickets(req, res) {
 export async function deleteTicket(req, res) {
     try {
         const { ticketId } = req.params;
-        const tenantId = req.user.tenantId;
-
-        if (!tenantId) {
-            return res.status(400).json({
-                message: "You don't belong to any organization",
-            });
-        }
 
         const ticket = await Ticket.findOneAndDelete({
             _id: ticketId,
@@ -142,13 +116,7 @@ export async function updateTicket(req, res) {
         const { ticketId } = req.params;
         const { title, description, priority, status } = req.body;
 
-        const tenantId = req.user.tenantId;
 
-        if (!tenantId) {
-            return res.status(400).json({
-                message: "You don't belong to any organization",
-            });
-        }
 
         const ticket = await Ticket.findOneAndUpdate(
             {

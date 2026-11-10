@@ -23,6 +23,7 @@ export interface CreateTicketData {
     title: string;
     description: string;
     priority?: TicketPriority;
+    tenantId?:string;
 }
 
 export interface UpdateTicketData {

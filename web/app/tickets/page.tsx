@@ -1,12 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { useTickets } from "../../features/tickets/hooks/useTickets";
 import { TicketList } from "../../features/tickets/components/TicketList";
-import { TicketForm } from "../../features/tickets/components/TicketForm";
 import { DashboardMetrics } from "../../features/dashboard/components/DashboardMetrics";
-import { Modal } from "../../shared/ui/Modal";
-import { Button } from "../../shared/ui/Button";
 import { Input } from "../../shared/ui/Input";
 import { Search } from "lucide-react";
 import { TicketStatus } from "../../shared/types";
@@ -21,10 +17,7 @@ export default function TicketsPage() {
         setSearch,
         statusFilter,
         setStatusFilter,
-        createTicket,
     } = useTickets();
-
-    const [showCreateModal, setShowCreateModal] = useState(false);
 
     if (loading) {
         return (
@@ -45,11 +38,7 @@ export default function TicketsPage() {
                         <h1 className="text-3xl font-bold tracking-tight">Tickets</h1>
                         <p className="text-white/50 mt-1">Manage and track your support tickets</p>
                     </div>
-                    <Button onClick={() => setShowCreateModal(true)}>
-                        Create Ticket
-                    </Button>
                 </header>
-
                 {error && (
                     <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-red-400">
                         {error}
@@ -81,23 +70,6 @@ export default function TicketsPage() {
                 </div>
 
                 <TicketList tickets={filteredTickets} />
-
-                <Modal
-                    isOpen={showCreateModal}
-                    onClose={() => setShowCreateModal(false)}
-                    title="Create New Ticket"
-                >
-                    <TicketForm
-                        onSubmit={async (data) => {
-                            const res = await createTicket(data);
-                            if (res.success) {
-                                setShowCreateModal(false);
-                            }
-                            return res;
-                        }}
-                        onCancel={() => setShowCreateModal(false)}
-                    />
-                </Modal>
             </div>
         </main>
     );

@@ -6,9 +6,10 @@ import { Input } from "../../../shared/ui/Input";
 interface TicketFormProps {
     onSubmit: (data: CreateTicketData) => Promise<{ success: boolean; error?: string }>;
     onCancel: () => void;
+    tenantId:string
 }
 
-export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
+export function TicketForm({ onSubmit, onCancel,tenantId }: TicketFormProps) {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [priority, setPriority] = useState<TicketPriority>("medium");
@@ -23,7 +24,7 @@ export function TicketForm({ onSubmit, onCancel }: TicketFormProps) {
         }
         setLoading(true);
         setError("");
-        const res = await onSubmit({ title: title.trim(), description: description.trim(), priority });
+        const res = await onSubmit({ title: title.trim(), description: description.trim(), priority,tenantId });
         if (!res.success) {
             setError(res.error || "An unknown error occurred");
         }
