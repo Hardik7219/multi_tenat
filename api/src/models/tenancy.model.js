@@ -15,23 +15,20 @@ const tenancySchema = new mongoose.Schema(
             lowercase: true,
             trim: true,
         },
-
-        email: {
-            type: String,
-            trim: true,
-            lowercase: true,
-        },
-
         status: {
             type: String,
             enum: ["active", "suspended", "deleted"],
             default: "active",
         },
-
         plan: {
             type: String,
             enum: ["free", "pro", "enterprise"],
             default: "free",
+        },
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            index: true,
         },
     },
     {

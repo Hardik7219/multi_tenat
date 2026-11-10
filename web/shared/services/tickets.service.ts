@@ -1,13 +1,18 @@
 import { Ticket, CreateTicketData, UpdateTicketData } from "../types";
-
 const url = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:2000";
 
-export async function createTicket(data: CreateTicketData): Promise<Ticket> {
+
+function authHeaders(token: string) {
+    return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+    };
+}
+export async function createTicket(data: CreateTicketData,accessToken:string): Promise<Ticket> {
+    console.log("create ticket")
     const response = await fetch(`${url}/api/tickets`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
+        headers: authHeaders(accessToken),
         body: JSON.stringify({ title: data.title, description: data.description, priority: data.priority }),
     });
     const result = await response.json();
@@ -16,25 +21,29 @@ export async function createTicket(data: CreateTicketData): Promise<Ticket> {
     }
     return result.ticket;
 }
-
-export async function getTickets(): Promise<Ticket[]> {
-    console.log("hello");
+export async function getTickets(accessToken: string): Promise<Ticket[]> {
+    console.log("get tickets");
 
     const response = await fetch(`${url}/api/tickets`, {
         method: "GET",
         cache: "no-store",
+        headers : authHeaders(accessToken),
     });
     const result = await response.json();
+    console.log(result);
     
     if (!response.ok) {
-        throw new Error(result.message || "Failed to fetch tickets");
+        throw new Error(result.message  || "Failed to fetch tickets");
     }
     return result.tickets;
 }
 
-export async function getTicket(ticketId: string): Promise<Ticket> {
+export async function getTicket(ticketId: string,accessToken: string): Promise<Ticket> {
+    console.log("get ticket");
+    
     const response = await fetch(`${url}/api/tickets/${ticketId}`, {
         method: "GET",
+        headers: authHeaders(accessToken),
         cache: "no-store",
     });
     const result = await response.json();
@@ -44,12 +53,12 @@ export async function getTicket(ticketId: string): Promise<Ticket> {
     return result.ticket;
 }
 
-export async function updateTicket(ticketId: string, data: UpdateTicketData): Promise<Ticket> {
+export async function updateTicket(ticketId: string, data: UpdateTicketData,accessToken:string): Promise<Ticket> {
+    console.log("update ticket");
+    
     const response = await fetch(`${url}/api/tickets/${ticketId}`, {
         method: "PATCH",
-        headers: {
-            "Content-Type": "application/json",
-        },
+        headers: authHeaders(accessToken),
         body: JSON.stringify(data),
     });
     const result = await response.json();
@@ -59,10 +68,13 @@ export async function updateTicket(ticketId: string, data: UpdateTicketData): Pr
     return result.ticket;
 }
 
-export async function deleteTicket(ticketId: string): Promise<void> {
+export async function deleteTicket(ticketId: string,accessToken:string): Promise<void> {
     const response = await fetch(`${url}/api/tickets/${ticketId}`, {
         method: "DELETE",
+        headers: authHeaders(accessToken),
     });
+    console.log("delete ticket");
+    
     const result = await response.json();
     if (!response.ok) {
         throw new Error(result.message || "Failed to delete ticket");

@@ -1,48 +1,17 @@
-import { getCurrentUserSession, isAuthenticated } from "@/lib/auth/session";
-import { useCallback, useEffect, useState } from "react";
-import { UserData } from "@/shared/types";
-import { signupUser } from "@/shared/services/auth.service";
-import { useRouter } from "next/router";
+import { useSession } from "next-auth/react";
+
 export function useAuth() {
-    const [userData, setUserData] = useState();
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+    const { data: session, status } = useSession();
+    const loading = status === "loading";
+    const userData = session?.user ?? null;
 
-    const checkUserLogin = useCallback(async () => {
-        try {
-            setLoading(true);
-            setError("")
-            const data = await getCurrentUserSession();
-            setUserData(data)
-            console.log("hello", data);
-
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to check");
-        } finally {
-            setLoading(false);
-        }
-    }, [])
-    useEffect(() => {
-        checkUserLogin();
-    }
-        , [checkUserLogin])
-    const isAuthenticate = async () => {
-        try {
-            setLoading(true);
-            setError("")
-            return isAuthenticated();
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to check");
-        } finally {
-            setLoading(false);
-        }
-    }
     return {
         userData,
         loading,
-        isAuthenticate
-    }
+        session,
+    };
 }
+
 
 
 // export function useSignup(username:string,email: string, password: string,role:string) {

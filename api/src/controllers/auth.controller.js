@@ -4,6 +4,8 @@ import { generateAccessToken } from "../utils/jwtTokenGenerator.js";
 
 export const createUser = async (req, res) => {
     try {
+        console.log("hello");
+        
         const { email, username, password, role, tenantId } = req.body;
         if (!email || !username || !password) return res.status(400).json({ message: "fill all the fields" })
         const isExist = await User.findOne({ email });
@@ -18,7 +20,7 @@ export const createUser = async (req, res) => {
             role: role || 'customer',
             tenantId: tenantId || null
         })
-        return res.status(200).json({ user });
+        return res.status(201).json({ user });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "failed to create user" })

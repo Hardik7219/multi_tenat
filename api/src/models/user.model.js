@@ -3,23 +3,18 @@ import mongoose, { Schema } from "mongoose";
 
 const userSchema = new Schema({
     username: String,
-    email: String,
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        lowercase: true,
+        trim: true,
+    },
     authId: String,
     password: String,
     avatar: {
         type: String,
         default: ""
-    },
-    role: {
-        type: String,
-        enum: ['organazation', 'customer'],
-        default: 'customer'
-    },
-    tenantId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Tenancy",
-        required: false,
-        index: true,
     },
 }, {
     timestamps: true

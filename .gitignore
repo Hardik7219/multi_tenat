@@ -103,3 +103,8 @@ Desktop.ini
 # ==============================
 mcp/.env
 mcp/.env.*
+.aider*
+
+
+MD/*
+

@@ -1,4 +1,4 @@
-export async function signupUser(formData: { username?: string, email?: string, password?: string, role?: string }) {
+export async function signupUser(formData: { username?: string, email?: string, password?: string }) {
     const url = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:2000";    
     const response = await fetch(`${url}/api/auth/signup`, {
         method: "POST",
@@ -7,7 +7,6 @@ export async function signupUser(formData: { username?: string, email?: string, 
             username: formData.username,
             email: formData.email,
             password: formData.password,
-            role: formData.role
         }),
     });
 

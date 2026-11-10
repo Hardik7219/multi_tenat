@@ -23,14 +23,10 @@ export default function SignupPage() {
         setError("");
         setLoading(true);
         try {
-            await signupUser({ username, email, password, role: role || "customer" });
+            await signupUser({ username, email, password,});
             
-            if (role === "organization") {
-                // If org, they need to log in and create a tenant
-                router.push("/login?setup=true");
-            } else {
                 router.push("/login");
-            }
+
         } catch (err) {
             setError(err instanceof Error ? err.message : "Signup failed");
         } finally {
@@ -38,39 +34,39 @@ export default function SignupPage() {
         }
     };
 
-    if (!role) {
-        return (
-            <main className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 text-white">
-                <div className="text-center mb-10">
-                    <h1 className="text-4xl font-bold tracking-tight mb-2">Join MultiTenant</h1>
-                    <p className="text-white/50">How would you like to use the platform?</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
-                    <Card onClick={() => setRole("organization")} className="flex flex-col items-center text-center gap-4 py-10 cursor-pointer border-white/10 hover:border-blue-500/50 hover:bg-blue-500/5 transition">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400">
-                            <Building2 size={32} />
-                        </div>
-                        <div>
-                            <h3 className="text-xl font-semibold">I am an Organization</h3>
-                            <p className="mt-2 text-sm text-white/50 px-4">I want to create a workspace and manage customer support tickets.</p>
-                        </div>
-                    </Card>
-                    <Card onClick={() => setRole("customer")} className="flex flex-col items-center text-center gap-4 py-10 cursor-pointer border-white/10 hover:border-green-500/50 hover:bg-green-500/5 transition">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-green-500/10 text-green-400">
-                            <User size={32} />
-                        </div>
-                        <div>
-                            <h3 className="text-xl font-semibold">I am a Customer</h3>
-                            <p className="mt-2 text-sm text-white/50 px-4">I want to join an existing workspace to submit and track tickets.</p>
-                        </div>
-                    </Card>
-                </div>
-                <div className="mt-8 text-sm text-white/50">
-                    Already have an account? <Link href="/login" className="text-white hover:underline">Log in</Link>
-                </div>
-            </main>
-        );
-    }
+    // if (!role) {
+    //     return (
+    //         <main className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 text-white">
+    //             <div className="text-center mb-10">
+    //                 <h1 className="text-4xl font-bold tracking-tight mb-2">Join MultiTenant</h1>
+    //                 <p className="text-white/50">How would you like to use the platform?</p>
+    //             </div>
+    //             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+    //                 <Card onClick={() => setRole("organization")} className="flex flex-col items-center text-center gap-4 py-10 cursor-pointer border-white/10 hover:border-blue-500/50 hover:bg-blue-500/5 transition">
+    //                     <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400">
+    //                         <Building2 size={32} />
+    //                     </div>
+    //                     <div>
+    //                         <h3 className="text-xl font-semibold">I am an Organization</h3>
+    //                         <p className="mt-2 text-sm text-white/50 px-4">I want to create a workspace and manage customer support tickets.</p>
+    //                     </div>
+    //                 </Card>
+    //                 <Card onClick={() => setRole("customer")} className="flex flex-col items-center text-center gap-4 py-10 cursor-pointer border-white/10 hover:border-green-500/50 hover:bg-green-500/5 transition">
+    //                     <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-green-500/10 text-green-400">
+    //                         <User size={32} />
+    //                     </div>
+    //                     <div>
+    //                         <h3 className="text-xl font-semibold">I am a Customer</h3>
+    //                         <p className="mt-2 text-sm text-white/50 px-4">I want to join an existing workspace to submit and track tickets.</p>
+    //                     </div>
+    //                 </Card>
+    //             </div>
+    //             <div className="mt-8 text-sm text-white/50">
+    //                 Already have an account? <Link href="/login" className="text-white hover:underline">Log in</Link>
+    //             </div>
+    //         </main>
+    //     );
+    // }
 
     return (
         <main className="min-h-screen bg-[#050505] flex items-center justify-center p-6 text-white">

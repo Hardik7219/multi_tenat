@@ -9,6 +9,8 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 
 export default function LandingPage() {
     const {userData,loading} = useAuth();
+    console.log(userData);
+    
     if(loading) return <Loader></Loader>
     return (
         <main className="flex-1 flex flex-col overflow-hidden">
@@ -29,7 +31,7 @@ export default function LandingPage() {
                 </p>
             {userData  && (
                 <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
-                    <Link href="/profile">
+                    <Link href="/dashboard">
                         <Button size="lg" className="h-14 px-8 text-base shadow-[0_0_30px_rgba(255,255,255,0.2)]">
                             Start <ArrowRight size={18} className="ml-2" />
                         </Button>

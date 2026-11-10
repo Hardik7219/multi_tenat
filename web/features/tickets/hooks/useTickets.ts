@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Ticket, TicketStatus, CreateTicketData, UpdateTicketData } from "../../../shared/types";
 import { getTickets, createTicket as apiCreateTicket, updateTicket as apiUpdateTicket, deleteTicket as apiDeleteTicket } from "../../../shared/services/tickets.service";
+import { useSession } from "next-auth/react";
 
 export function useTickets() {
     const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -9,27 +10,36 @@ export function useTickets() {
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<TicketStatus | "all">("all");
 
+    const { data: session } = useSession();
+    const accessToken = session?.user?.accessToken as string | undefined;
+
     const loadTickets = useCallback(async () => {
+        if (!accessToken) {
+            setLoading(false);
+            return;
+        }
         try {
             setLoading(true);
+            
             setError("");
-            const data = await getTickets();
+            const data = await getTickets(accessToken);
             setTickets(data);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to load tickets");
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [accessToken]);
 
     useEffect(() => {
         loadTickets();
     }, [loadTickets]);
 
     const createTicket = async (data: CreateTicketData) => {
+        if (!accessToken) return { success: false, error: "Not authenticated" };
         try {
             setError("");
-            const newTicket = await apiCreateTicket(data);
+            const newTicket = await apiCreateTicket(data, accessToken);
             setTickets((current) => [newTicket, ...current]);
             return { success: true, ticket: newTicket };
         } catch (err) {
@@ -40,9 +50,10 @@ export function useTickets() {
     };
 
     const updateTicket = async (id: string, data: UpdateTicketData) => {
+        if (!accessToken) return { success: false, error: "Not authenticated" };
         try {
             setError("");
-            const updated = await apiUpdateTicket(id, data);
+            const updated = await apiUpdateTicket(id, data, accessToken);
             setTickets((current) => current.map((t) => (t._id === id ? updated : t)));
             return { success: true, ticket: updated };
         } catch (err) {
@@ -53,9 +64,12 @@ export function useTickets() {
     };
 
     const deleteTicket = async (id: string) => {
+        if (!accessToken) return { success: false, error: "Not authenticated" };
         try {
             setError("");
-            await apiDeleteTicket(id);
+            console.log("se");
+            
+            await apiDeleteTicket(id, accessToken);
             setTickets((current) => current.filter((t) => t._id !== id));
             return { success: true };
         } catch (err) {

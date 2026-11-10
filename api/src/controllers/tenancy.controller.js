@@ -30,18 +30,8 @@ export async function createTenancy(req, res) {
         const tenancy = await Tenancy.create({
             name,
             slug,
+            createdBy: req.user.id,
         });
-
-        await User.findByIdAndUpdate(
-            req.user.id,
-            {
-                tenantId: tenancy._id,
-                role: "owner",
-            },
-            {
-                new: true,
-            }
-        );
 
         return res.status(201).json({
             message: "Organization created successfully",
@@ -61,16 +51,13 @@ export async function createTenancy(req, res) {
 // Fetch current user's organization
 export async function fetchTenancy(req, res) {
     try {
-        const tenantId = req.user.tenantId;
-
+        const tenantId = req.params.id;
         if (!tenantId) {
             return res.status(400).json({
-                message: "You don't belong to any organization",
+                message: "There is no Tenant",
             });
         }
-
         const tenancy = await Tenancy.findById(tenantId);
-
         if (!tenancy) {
             return res.status(404).json({
                 message: "Organization not found",
@@ -82,7 +69,6 @@ export async function fetchTenancy(req, res) {
         });
 
     } catch (error) {
-        console.error("FETCH TENANCY ERROR:", error);
 
         return res.status(500).json({
             message: "Failed to fetch organization",
@@ -90,7 +76,52 @@ export async function fetchTenancy(req, res) {
     }
 }
 
+export async function fetchTenancies(req, res) {
+    try {
+        const { search = "" } = req.query;
 
+        // Escape regex special characters to prevent unintended patterns.
+        const escapedSearch = String(search)
+            .trim()
+            .slice(0, 100)
+            .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+        const query = {
+            createdBy: { $ne: req.user.id },
+            status: { $ne: "deleted" },
+        };
+
+        if (escapedSearch) {
+            query.$or = [
+                { name: { $regex: escapedSearch, $options: "i" } },
+                { slug: { $regex: escapedSearch, $options: "i" } },
+                { email: { $regex: escapedSearch, $options: "i" } },
+            ];
+        }
+
+        const [tenants, total] = await Promise.all([
+            Tenancy.find(query)
+                .select("name slug email status plan createdAt")
+                .sort({ createdAt: -1 })
+                .limit(50)
+                .lean(),
+
+            Tenancy.countDocuments(query),
+        ]);        
+        return res.status(200).json({
+            message: "Organizations fetched successfully",
+            tenants,
+            total,
+        });
+
+    } catch (error) {
+        console.error("FETCH TENANCIES ERROR:", error);
+
+        return res.status(500).json({
+            message: "Failed to fetch organizations",
+        });
+    }
+}
 // Update organization
 export async function updateTenancy(req, res) {
     try {
