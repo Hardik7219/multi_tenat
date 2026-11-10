@@ -36,7 +36,6 @@ export default function TenantsPage() {
     const [search, setSearch] = useState("");
     const [showForm, setShowForm] = useState(false);
 
-    // Initial fetch and debounced search
     useEffect(() => {
         const timeout = setTimeout(() => {
             loadTenants(search);
@@ -45,7 +44,6 @@ export default function TenantsPage() {
         return () => clearTimeout(timeout);
     }, [search, loadTenants]);
 
-    // Create organization
     const handleCreate = async (data: CreateTenantData) => {
         const result = await createTenant(data);
 
@@ -66,7 +64,6 @@ export default function TenantsPage() {
 
             <div className="mx-auto max-w-7xl">
 
-                {/* Header */}
                 <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
 
                     <div>
@@ -94,7 +91,6 @@ export default function TenantsPage() {
 
                 </div>
 
-                {/* Search and count */}
                 <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
                     <div className="relative w-full sm:max-w-md">
@@ -120,7 +116,6 @@ export default function TenantsPage() {
 
                 </div>
 
-                {/* Error */}
                 {error && (
                     <div className="mt-8 flex items-center justify-between gap-4 rounded-xl border border-red-500/20 bg-red-500/5 p-4">
 
@@ -146,7 +141,6 @@ export default function TenantsPage() {
                     </div>
                 )}
 
-                {/* Loading */}
                 {loading && tenants.length === 0 && !error && (
                     <div className="mt-16 flex flex-col items-center justify-center text-white/40">
                         <RefreshCw
@@ -160,7 +154,6 @@ export default function TenantsPage() {
                     </div>
                 )}
 
-                {/* Tenant list */}
                 {!loading && !error && tenants.length > 0 && (
 
                     <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -175,7 +168,6 @@ export default function TenantsPage() {
                     </div>
                 )}
 
-                {/* Empty state */}
                 {!loading && !error && tenants.length === 0 && (
 
                     <div className="mt-16 flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-6 py-16 text-center">
@@ -212,7 +204,6 @@ export default function TenantsPage() {
                     </div>
                 )}
 
-                {/* Create organization modal */}
                 {showForm && (
 
                     <div

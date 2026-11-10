@@ -9,11 +9,10 @@ function authHeaders(token: string) {
     };
 }
 export async function createTicket(data: CreateTicketData,accessToken:string): Promise<Ticket> {
-    console.log("create ticket")
     const response = await fetch(`${url}/api/tickets`, {
         method: "POST",
         headers: authHeaders(accessToken),
-        body: JSON.stringify({ title: data.title, description: data.description, priority: data.priority }),
+        body: JSON.stringify({ title: data.title, description: data.description, priority: data.priority,tenantId:data.tenantId }),
     });
     const result = await response.json();
     if (!response.ok) {
@@ -22,7 +21,6 @@ export async function createTicket(data: CreateTicketData,accessToken:string): P
     return result.ticket;
 }
 export async function getTickets(accessToken: string): Promise<Ticket[]> {
-    console.log("get tickets");
 
     const response = await fetch(`${url}/api/tickets`, {
         method: "GET",
@@ -30,7 +28,6 @@ export async function getTickets(accessToken: string): Promise<Ticket[]> {
         headers : authHeaders(accessToken),
     });
     const result = await response.json();
-    console.log(result);
     
     if (!response.ok) {
         throw new Error(result.message  || "Failed to fetch tickets");

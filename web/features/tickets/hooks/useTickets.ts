@@ -20,10 +20,15 @@ export function useTickets() {
         }
         try {
             setLoading(true);
-            
+
             setError("");
             const data = await getTickets(accessToken);
-            setTickets(data);
+
+            if (!Array.isArray(data)) {
+                throw new Error("Invalid tickets response from server");
+            }
+
+            setTickets(data);;
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to load tickets");
         } finally {
@@ -68,7 +73,7 @@ export function useTickets() {
         try {
             setError("");
             console.log("se");
-            
+
             await apiDeleteTicket(id, accessToken);
             setTickets((current) => current.filter((t) => t._id !== id));
             return { success: true };
