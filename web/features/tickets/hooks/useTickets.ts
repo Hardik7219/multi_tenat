@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Ticket, TicketStatus, CreateTicketData, UpdateTicketData } from "../../../shared/types";
-import { getTickets, createTicket as apiCreateTicket, updateTicket as apiUpdateTicket, deleteTicket as apiDeleteTicket } from "../../../shared/services/tickets.service";
+import { getTickets, createTicket as apiCreateTicket, updateTicket as apiUpdateTicket, deleteTicket as apiDeleteTicket, fetchTenantTickets, getTenantTicket } from "../../../shared/services/tickets.service";
 import { useSession } from "next-auth/react";
 
-export function useTickets() {
+export function useTickets(tenantId :string) {
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -22,19 +22,31 @@ export function useTickets() {
             setLoading(true);
 
             setError("");
-            const data = await getTickets(accessToken);
+            if (!tenantId) {
 
-            if (!Array.isArray(data)) {
-                throw new Error("Invalid tickets response from server");
+                const data = await getTickets(accessToken);
+
+                if (!Array.isArray(data)) {
+                    throw new Error("Invalid tickets response from server");
+                }
+
+                setTickets(data);;
             }
-
-            setTickets(data);;
+            else {
+                console.log("hello load ticker");
+                
+                const data = await getTenantTicket(tenantId, accessToken)
+                if (!Array.isArray(data)) {
+                    throw new Error("Invalid tickets response from server");
+                }
+                setTickets(data);
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to load tickets");
         } finally {
             setLoading(false);
         }
-    }, [accessToken]);
+    }, [accessToken,tenantId]);
 
     useEffect(() => {
         loadTickets();
@@ -72,7 +84,6 @@ export function useTickets() {
         if (!accessToken) return { success: false, error: "Not authenticated" };
         try {
             setError("");
-            console.log("se");
 
             await apiDeleteTicket(id, accessToken);
             setTickets((current) => current.filter((t) => t._id !== id));
@@ -83,7 +94,21 @@ export function useTickets() {
             return { success: false, error: msg };
         }
     };
+    const fetchTenantTickets = async (tenantId: string) => {
+        if (!accessToken) return { success: false, error: "Not authenticated" };
+        try {
+            const data = await getTenantTicket(tenantId, accessToken)
+            if (!Array.isArray(data)) {
+                throw new Error("Invalid tickets response from server");
+            }
+            setTickets(data);
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : "Failed to delete ticket";
+            setError(msg);
+            return { success: false, error: msg };
+        }
 
+    }
     const filteredTickets = useMemo(() => {
         return tickets.filter((ticket) => {
             const matchesSearch =
@@ -116,6 +141,7 @@ export function useTickets() {
         createTicket,
         updateTicket,
         deleteTicket,
+        fetchTenantTickets,
         reload: loadTickets,
     };
 }

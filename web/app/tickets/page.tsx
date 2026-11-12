@@ -17,7 +17,7 @@ export default function TicketsPage() {
         setSearch,
         statusFilter,
         setStatusFilter,
-    } = useTickets();
+    } = useTickets("");
 
     if (loading) {
         return (

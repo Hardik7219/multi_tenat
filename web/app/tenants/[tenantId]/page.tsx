@@ -11,6 +11,8 @@ import { Button } from "@/shared/ui/Button";
 import { Modal } from "@/shared/ui/Modal";
 import { TicketForm } from "@/features/tickets/components/TicketForm";
 import { useTickets } from "@/features/tickets/hooks/useTickets";
+import { TicketList } from "@/features/tickets/components/TicketList";
+
 
 function formatDate(date?: string) {
     if (!date) return "Not available";
@@ -27,11 +29,13 @@ function formatDate(date?: string) {
         year: "numeric",
     });
 }
-
 function TenantPage() {
     const params = useParams<{ tenantId: string }>();
     const id = params.tenantId;
 
+    const { data: session } = useSession();
+
+    const user = session?.user;    
     const { status: sessionStatus } = useSession();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const { tenant, loadTenant, loading, error } = useTenants();
@@ -41,8 +45,9 @@ function TenantPage() {
         setSearch,
         statusFilter,
         createTicket,
+        fetchTenantTickets,
         setStatusFilter,
-    } = useTickets();
+    } = useTickets(id);
     useEffect(() => {
         if (sessionStatus === "authenticated" && id) {
             void loadTenant(id);
@@ -91,13 +96,13 @@ function TenantPage() {
     const stats = [
         {
             label: "Total Tickets",
-            value: "—",
+            value: filteredTickets.length,
             description: "Awaiting statistics API",
             accent: "text-blue-400",
         },
         {
             label: "Open Tickets",
-            value: "—",
+            value: filteredTickets.length,
             description: "Awaiting statistics API",
             accent: "text-yellow-400",
         },
@@ -182,7 +187,8 @@ function TenantPage() {
                             onClose={() => setShowCreateModal(false)}
                             title="Create New Ticket"
                         >
-                            <TicketForm tenantId={id}
+                            <TicketForm
+                                tenantId={id}
                                 onSubmit={async (data) => {
                                     const res = await createTicket(data);
                                     if (res.success) {
@@ -224,11 +230,10 @@ function TenantPage() {
 
                         <InfoCard label="Organization Slug" value={tenant.slug} />
 
-                        <InfoCard label="Organization ID" value={tenant._id} mono />
 
                         <InfoCard
-                            label="Creator ID"
-                            value={tenant.createdBy || "Not available"}
+                            label="Creator Name"
+                            value={user?.name || "Not available"}
                             mono
                         />
 
@@ -289,19 +294,8 @@ function TenantPage() {
                         </Link>
                     </div>
 
-                    <div className="rounded-xl border border-white/10 bg-[#0c0c0c] p-10 text-center">
-                        <div className="w-12 h-12 mx-auto rounded-xl bg-white/5 flex items-center justify-center text-white/40 text-xl mb-4">
-                            +
-                        </div>
-
-                        <h3 className="font-medium text-white/80">
-                            Ticket data not connected yet
-                        </h3>
-
-                        <p className="text-sm text-white/40 mt-2 max-w-md mx-auto">
-                            Recent tickets and organization statistics will appear here after
-                            connecting the organization-scoped ticket APIs.
-                        </p>
+                    <div>
+                        <TicketList tickets={filteredTickets} />
                     </div>
                 </section>
 
