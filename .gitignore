@@ -115,3 +115,16 @@ MD/*
 .aider.tags.cache.v4
 graphify-out
 path
+
+# Next.js
+**/.next/
+**/out/
+**/next-env.d.ts
+
+# Build artifacts
+**/dist/
+**/build/
+**/coverage/
+
+# Turbopack
+**/.turbo/
