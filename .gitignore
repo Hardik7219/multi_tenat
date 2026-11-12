@@ -108,7 +108,10 @@ Desktop.ini
 mcp/.env
 mcp/.env.*
 .aider*
-
+mcp/node_modules*
+mcp/dist
 
 MD/*
-
+.aider.tags.cache.v4
+graphify-out
+path
