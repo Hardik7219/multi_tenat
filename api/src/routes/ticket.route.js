@@ -6,6 +6,7 @@ import {
     fetchAllTickets,
     deleteTicket,
     updateTicket,
+    fetchTenantTickets,
 } from "../controllers/ticket.controller.js";
 
 import { authenticate } from "../middleware/auth.middleware.js";
@@ -19,6 +20,8 @@ router.post("/", createTicket);
 router.get("/", fetchAllTickets);
 
 router.get("/:ticketId", fetchTicket);
+
+router.get("/tenanttickets/:tenantId",fetchTenantTickets);
 
 router.patch("/:ticketId", updateTicket);
 

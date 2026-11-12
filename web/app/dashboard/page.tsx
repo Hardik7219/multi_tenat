@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "../../shared/ui/Button";
 
 export default function DashboardPage() {
-    const { tickets, stats, loading, error } = useTickets();
+    const { tickets, stats, loading, error } = useTickets('');
 
     if (loading) {
         return (

@@ -36,7 +36,6 @@ export async function getTickets(accessToken: string): Promise<Ticket[]> {
 }
 
 export async function getTicket(ticketId: string,accessToken: string): Promise<Ticket> {
-    console.log("get ticket");
     
     const response = await fetch(`${url}/api/tickets/${ticketId}`, {
         method: "GET",
@@ -49,7 +48,22 @@ export async function getTicket(ticketId: string,accessToken: string): Promise<T
     }
     return result.ticket;
 }
-
+export async function getTenantTicket(tenantId: string,accessToken: string): Promise<Ticket> {
+    console.log("get ticket",tenantId);
+    
+    const response = await fetch(`${url}/api/tickets/tenanttickets/${tenantId}`, {
+        method: "GET",
+        headers: authHeaders(accessToken),
+        cache: "no-store",
+    });
+    const result = await response.json();
+    console.log(result);
+    
+    if (!response.ok) {
+        throw new Error(result.message || "Failed to fetch ticket");
+    }
+    return result.tickets;
+}
 export async function updateTicket(ticketId: string, data: UpdateTicketData,accessToken:string): Promise<Ticket> {
     console.log("update ticket");
     

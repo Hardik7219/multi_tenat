@@ -1,7 +1,7 @@
 import React from "react";
 import { Ticket } from "../../../shared/types";
 import { Card } from "../../../shared/ui/Card";
-
+import Link from "next/link";
 interface TicketListProps {
     tickets: Ticket[];
 }
@@ -42,28 +42,54 @@ export function TicketList({ tickets }: TicketListProps) {
     return (
         <div className="flex flex-col gap-4">
             {tickets.map((ticket) => (
-                <Card key={ticket._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-3">
-                            <span className="text-xs font-mono text-white/40">#{ticket._id.slice(-6)}</span>
-                            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium uppercase tracking-wider ${getStatusColor(ticket.status)}`}>
-                                {ticket.status.replace("_", " ")}
+                <Link
+                    key={ticket._id}
+                    href={`/tickets/${ticket._id}`}
+                    className="block"
+                >
+                    <Card className="flex flex-col justify-between gap-4 transition hover:border-white/20 sm:flex-row sm:items-center">
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-3">
+                                <span className="font-mono text-xs text-white/40">
+                                    #{ticket._id.slice(-6)}
+                                </span>
+
+                                <span
+                                    className={`rounded-full border px-2.5 py-0.5 text-xs font-medium uppercase tracking-wider ${getStatusColor(ticket.status)}`}
+                                >
+                                    {ticket.status.replace("_", " ")}
+                                </span>
+                            </div>
+
+                            <h4 className="text-lg font-semibold text-white">
+                                {ticket.title}
+                            </h4>
+
+                            <p className="line-clamp-2 text-sm text-white/60">
+                                {ticket.description}
+                            </p>
+                        </div>
+
+                        <div className="flex flex-col gap-3 sm:items-end">
+                            <span
+                                className={`text-xs font-medium uppercase tracking-wider ${getPriorityColor(ticket.priority)}`}
+                            >
+                                {ticket.priority} Priority
+                            </span>
+
+                            <span className="text-xs text-white/30">
+                                {new Date(ticket.createdAt).toLocaleDateString(
+                                    undefined,
+                                    {
+                                        year: "numeric",
+                                        month: "short",
+                                        day: "numeric",
+                                    }
+                                )}
                             </span>
                         </div>
-                        <h4 className="text-lg font-semibold text-white">{ticket.title}</h4>
-                        <p className="text-sm text-white/60 line-clamp-2">{ticket.description}</p>
-                    </div>
-                    <div className="flex flex-col sm:items-end justify-between gap-3">
-                        <span className={`text-xs font-medium uppercase tracking-wider ${getPriorityColor(ticket.priority)}`}>
-                            {ticket.priority} Priority
-                        </span>
-                        <span className="text-xs text-white/30">
-                            {new Date(ticket.createdAt).toLocaleDateString(undefined, {
-                                year: 'numeric', month: 'short', day: 'numeric'
-                            })}
-                        </span>
-                    </div>
-                </Card>
+                    </Card>
+                </Link>
             ))}
         </div>
     );
