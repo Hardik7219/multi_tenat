@@ -35,10 +35,13 @@
 # ==============================
 web/.next/
 web/out/
+<<<<<<< HEAD
 # Next.js
 .next/
 **/.next/
 out/
+=======
+>>>>>>> chat_feature
 
 # ==============================
 # Build outputs
@@ -82,6 +85,7 @@ test-results/
 *.swp
 *.swo
 *~
+<<<<<<< HEAD
 
 # ==============================
 # Operating system
@@ -128,3 +132,35 @@ path
 
 # Turbopack
 **/.turbo/
+=======
+
+# ==============================
+# Operating system
+# ==============================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ==============================
+# Deployment
+# ==============================
+.vercel/
+
+# ==============================
+# Local databases and uploaded data
+# ==============================
+*.sqlite
+*.sqlite3
+*.db
+
+# ==============================
+# MCP local configuration
+# ==============================
+mcp/.env
+mcp/.env.*
+.aider*
+
+
+MD/*
+
+>>>>>>> chat_feature

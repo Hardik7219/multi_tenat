@@ -14,6 +14,8 @@ import {
     Building2,
 } from "lucide-react";
 
+import { TicketChatPanel } from "../../../features/ticketMessage/components/TicketChatPanel";
+
 import { useTicket } from "../../../features/tickets/hooks/useTicket";
 import { Card } from "../../../shared/ui/Card";
 import { Button } from "../../../shared/ui/Button";
@@ -143,7 +145,6 @@ export default function TicketDetailsPage() {
                     Back to Tickets
                 </Link>
 
-                {/* Ticket heading */}
                 <section className="space-y-4">
                     <div className="flex flex-wrap items-center gap-3">
                         <span className="inline-flex items-center gap-2 font-mono text-sm text-white/40">
@@ -182,7 +183,6 @@ export default function TicketDetailsPage() {
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
 
-                    {/* Main content */}
                     <div className="space-y-6">
 
                         <Card className="space-y-4">
@@ -195,34 +195,10 @@ export default function TicketDetailsPage() {
                             </p>
                         </Card>
 
-                        {/* Conversation placeholder */}
-                        <Card className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-lg font-semibold">
-                                    Conversation
-                                </h2>
-
-                                <span className="rounded-full border border-white/10 px-2 py-1 text-xs text-white/40">
-                                    Coming next
-                                </span>
-                            </div>
-
-                            <div className="rounded-lg border border-dashed border-white/10 p-8 text-center">
-                                <div className="mb-3 text-3xl">💬</div>
-
-                                <h3 className="font-medium text-white/80">
-                                    Start a conversation
-                                </h3>
-
-                                <p className="mt-2 text-sm leading-6 text-white/40">
-                                    Messages from customers, AI, and support
-                                    agents will appear here.
-                                </p>
-                            </div>
-                        </Card>
+                        {/* Real-time Chat */}
+                        <TicketChatPanel ticketId={ticketId} />
                     </div>
 
-                    {/* Ticket details */}
                     <aside className="space-y-6">
                         <Card className="space-y-5">
                             <h2 className="text-sm font-semibold uppercase tracking-wider text-white/40">
