@@ -13,11 +13,6 @@ export async function createTenancy(req, res) {
             });
         }
 
-        if (req.user.tenantId) {
-            return res.status(400).json({
-                message: "User already belongs to an organization",
-            });
-        }
 
         const existingTenancy = await Tenancy.findOne({ slug });
 
@@ -48,7 +43,6 @@ export async function createTenancy(req, res) {
 }
 
 
-// Fetch current user's organization
 export async function fetchTenancy(req, res) {
     try {
         const tenantId = req.params.id;
@@ -80,7 +74,6 @@ export async function fetchTenancies(req, res) {
     try {
         const { search = "" } = req.query;
 
-        // Escape regex special characters to prevent unintended patterns.
         const escapedSearch = String(search)
             .trim()
             .slice(0, 100)
@@ -107,7 +100,7 @@ export async function fetchTenancies(req, res) {
                 .lean(),
 
             Tenancy.countDocuments(query),
-        ]);        
+        ]);
         return res.status(200).json({
             message: "Organizations fetched successfully",
             tenants,
@@ -122,20 +115,18 @@ export async function fetchTenancies(req, res) {
         });
     }
 }
-// Update organization
 export async function updateTenancy(req, res) {
     try {
-        const tenantId = req.user.tenantId;
-
-        if (req.user.role !== "owner" && req.user.role !== "organization") {
-            return res.status(403).json({
-                message: "Unauthorized to update organization",
-            });
-        }
-
+        const { tenantId } = req.body;
         if (!tenantId) {
             return res.status(400).json({
-                message: "You don't belong to any organization",
+                message: "There is no Tenant",
+            });
+        }
+        const tenant = await Tenancy.findById(tenantId);
+        if (req.user.id !== tenant.createdBy) {
+            return res.status(403).json({
+                message: "Unauthorized to update organization",
             });
         }
 
@@ -179,17 +170,16 @@ export async function updateTenancy(req, res) {
 // Delete organization
 export async function deleteTenancy(req, res) {
     try {
-        const tenantId = req.user.tenantId;
-
-        if (req.user.role !== "owner" && req.user.role !== "organization") {
-            return res.status(403).json({
-                message: "Unauthorized to delete organization",
-            });
-        }
-
+        const { tenantId } = req.body;
         if (!tenantId) {
             return res.status(400).json({
-                message: "You don't belong to any organization",
+                message: "There is no Tenant",
+            });
+        }
+        const tenant = await Tenancy.findById(tenantId);
+        if (req.user.id !== tenant.createdBy) {
+            return res.status(403).json({
+                message: "Unauthorized to update organization",
             });
         }
 
@@ -201,18 +191,6 @@ export async function deleteTenancy(req, res) {
             });
         }
 
-        await User.updateMany(
-            { tenantId },
-            {
-                $unset: {
-                    tenantId: 1,
-                },
-                $set: {
-                    role: "customer",
-                },
-            }
-        );
-
         return res.status(200).json({
             message: "Organization deleted successfully",
         });
@@ -222,6 +200,32 @@ export async function deleteTenancy(req, res) {
 
         return res.status(500).json({
             message: "Failed to delete organization",
+        });
+    }
+}
+
+
+
+export async function fetchMyTenancies(req, res) {
+    try {
+        const tenants = await Tenancy.find({
+            createdBy: req.user.id,
+            status: { $ne: "deleted" },
+        })
+            .select("name slug status plan createdAt")
+            .sort({ createdAt: -1 })
+            .lean();
+
+        return res.status(200).json({
+            message: "Your organizations fetched successfully",
+            tenants,
+            total: tenants.length,
+        });
+    } catch (error) {
+        console.error("FETCH MY TENANCIES ERROR:", error);
+
+        return res.status(500).json({
+            message: "Failed to fetch your organizations",
         });
     }
 }

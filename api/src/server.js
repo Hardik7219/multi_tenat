@@ -9,7 +9,7 @@ import authRoute from "./routes/auth.route.js";
 import ticketRoutes from "./routes/ticket.route.js";
 import tenateRoutes from "./routes/tenancy.route.js";
 import chatRoutes from "./routes/chat.route.js";
-
+import tenantSettingRoutes from "./routes/tenantSetting.route.js"
 import { initSocket } from "./socket/index.js";
 
 dotenv.config();
@@ -53,6 +53,7 @@ app.use("/api/auth", authRoute);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/tenants", tenateRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/tenant-settings", tenantSettingRoutes);
 
 const PORT = process.env.PORT || 2000;
 httpServer.listen(PORT, () => {
