@@ -9,7 +9,7 @@ import { useTenantSettings } from "../../features/tenantSettings/hooks/useTenant
 import { SettingsSection } from "../../features/tenantSettings/components/SettingsSection";
 import { DocumentList } from "../../features/tenantSettings/components/DocumentList";
 
-import type { TenantSettings } from "../../shared/services/tenantSettings.service";
+import type { TenantSettings } from "@/shared/types/tenantSetting.types"
 
 const inputClass =
     "w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-blue-500";

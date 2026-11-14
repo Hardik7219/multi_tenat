@@ -1,10 +1,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-
 import {
     TenantSettings,
     TenantDocument,
+} from "@/shared/types/tenantSetting.types"
+import {
+
     getTenantSettings,
     updateTenantSettings,
     getTenantDocuments,

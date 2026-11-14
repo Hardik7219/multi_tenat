@@ -16,7 +16,7 @@ const router = express.Router();
 router.post("/", authenticate, createTenancy);
 
 router.get("/discover", authenticate, fetchTenancies);
-router.get("/mine", fetchMyTenancies);
+router.get("/mine", authenticate,fetchMyTenancies);
 
 router.get("/:id", authenticate, fetchTenancy);
 

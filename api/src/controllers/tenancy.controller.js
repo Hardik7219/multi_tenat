@@ -2,7 +2,6 @@ import { Tenancy } from "../models/tenancy.model.js";
 import { User } from "../models/user.model.js";
 
 
-// Create a new organization / tenant
 export async function createTenancy(req, res) {
     try {
         const { name, slug } = req.body;
@@ -45,6 +44,7 @@ export async function createTenancy(req, res) {
 
 export async function fetchTenancy(req, res) {
     try {
+
         const tenantId = req.params.id;
         if (!tenantId) {
             return res.status(400).json({
@@ -124,7 +124,7 @@ export async function updateTenancy(req, res) {
             });
         }
         const tenant = await Tenancy.findById(tenantId);
-        if (req.user.id !== tenant.createdBy) {
+        if (!tenant.createdBy.equals(req.user.id)) {
             return res.status(403).json({
                 message: "Unauthorized to update organization",
             });
@@ -167,7 +167,6 @@ export async function updateTenancy(req, res) {
 }
 
 
-// Delete organization
 export async function deleteTenancy(req, res) {
     try {
         const { tenantId } = req.body;
@@ -215,6 +214,7 @@ export async function fetchMyTenancies(req, res) {
             .select("name slug status plan createdAt")
             .sort({ createdAt: -1 })
             .lean();
+        console.log(tenants);
 
         return res.status(200).json({
             message: "Your organizations fetched successfully",
