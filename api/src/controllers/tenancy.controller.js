@@ -1,5 +1,6 @@
 import { Tenancy } from "../models/tenancy.model.js";
 import { User } from "../models/user.model.js";
+import { deleteTenantVectors } from "../services/rag.service.js";
 
 
 export async function createTenancy(req, res) {
@@ -189,6 +190,11 @@ export async function deleteTenancy(req, res) {
                 message: "Organization not found",
             });
         }
+
+        // Remove all RAG vectors for this tenant from Qdrant (non-fatal).
+        deleteTenantVectors(tenantId)
+            .then(() => console.log(`[RAG] Vectors cleaned up for tenant ${tenantId}`))
+            .catch((err) => console.error(`[RAG] Vector cleanup failed for tenant ${tenantId}:`, err.message));
 
         return res.status(200).json({
             message: "Organization deleted successfully",

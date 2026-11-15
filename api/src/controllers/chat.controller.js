@@ -1,12 +1,20 @@
 import mongoose from "mongoose";
 import { Ticket } from "../models/ticket.model.js";
+import { TicketMessage } from "../models/ticketMessage.model.js";
+import { Tenancy } from "../models/tenancy.model.js";
+import { TenantDocument } from "../models/tenantDocument.model.js";
 import { OrganizationMember } from "../models/OrganizationMember.model.js";
 import {
     createMessage,
     getMessages,
     analyzeTicket,
 } from "../services/chat.service.js";
+import { queryRAG } from "../services/rag.service.js";
 
+
+// ---------------------------------------------------------------------------
+// Internal helper: resolve ticket + check user access
+// ---------------------------------------------------------------------------
 
 async function resolveTicketAndAuth(ticketId, userId) {
     if (!mongoose.isValidObjectId(ticketId)) {
@@ -45,6 +53,120 @@ async function resolveTicketAndAuth(ticketId, userId) {
 }
 
 
+// ---------------------------------------------------------------------------
+// Internal helper: generate and persist AI response (runs in background)
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate an AI response for a customer message via the RAG pipeline.
+ *
+ * This function:
+ *  1. Fetches tenant settings (kind="settings") from MongoDB.
+ *  2. Checks if AI auto-respond is enabled for this tenant.
+ *  3. Builds conversation history from the last 10 messages.
+ *  4. Calls the RAG ML service (Ollama/OpenAI — whatever provider is configured).
+ *  5. Saves the AI response as a TicketMessage with senderType="ai".
+ *  6. Emits the AI message via Socket.IO for real-time delivery.
+ *
+ * Always call this WITHOUT await so the HTTP response is sent immediately.
+ * Any errors here are logged but do not affect the user-facing response.
+ *
+ * @param {Object} ticket      - Mongoose lean Ticket document
+ * @param {string} userMessage - The customer's message text
+ * @param {Object} io          - Socket.IO server instance (from req.io)
+ */
+async function generateAIResponse({ ticket, userMessage, io }) {
+    try {
+        // 1. Fetch the tenant's settings from MongoDB.
+        const [tenantSettings, tenancy] = await Promise.all([
+            TenantDocument.findOne({
+                tenantId: ticket.tenantId,
+                kind: "settings",
+            }).lean(),
+            Tenancy.findById(ticket.tenantId).select("name").lean(),
+        ]);
+
+        // 2. Skip if AI is disabled or autoRespond is turned off.
+        if (!tenantSettings) {
+            console.log(`[RAG] No settings found for tenant ${ticket.tenantId} — skipping AI.`);
+            return;
+        }
+        if (!tenantSettings.ai?.enabled) {
+            console.log(`[RAG] AI disabled for tenant ${ticket.tenantId} — skipping.`);
+            return;
+        }
+        if (!tenantSettings.ai?.autoRespond) {
+            console.log(`[RAG] autoRespond=false for tenant ${ticket.tenantId} — skipping.`);
+            return;
+        }
+
+        // 3. Build conversation history from recent messages (exclude the message just sent).
+        const recentMessages = await TicketMessage.find({ ticketId: ticket._id })
+            .sort({ createdAt: -1 })
+            .limit(11) // 10 prior + 1 (the current message we just saved)
+            .lean();
+
+        // Reverse to chronological, drop the last (current) message.
+        const history = recentMessages
+            .reverse()
+            .slice(0, -1)
+            .map((m) => ({
+                role: m.senderType === "customer" ? "user" : "assistant",
+                content: m.content,
+            }));
+
+        // 4. Call RAG ML service.
+        const tenantName = tenancy?.name || "this organization";
+        let ragResult;
+        try {
+            ragResult = await queryRAG(
+                ticket.tenantId.toString(),
+                userMessage,
+                tenantSettings,
+                tenantName,
+                history
+            );
+        } catch (ragErr) {
+            console.error(`[RAG] Query failed for ticket ${ticket._id}:`, ragErr.message);
+            return; // Fail silently — do not create a broken AI message.
+        }
+
+        const answer = ragResult?.answer;
+        if (!answer || !answer.trim()) {
+            console.warn(`[RAG] Empty answer returned for ticket ${ticket._id}`);
+            return;
+        }
+
+        // 5. Save AI message to MongoDB.
+        const aiMessage = await createMessage({
+            tenantId: ticket.tenantId,
+            ticketId: ticket._id,
+            senderId: null,
+            senderType: "ai",
+            content: answer.trim(),
+        });
+
+        // 6. Emit via Socket.IO so connected browsers receive it in real time.
+        if (io) {
+            io.to(`ticket:${ticket._id}`).emit("new_message", aiMessage);
+        }
+
+        console.log(
+            `[RAG] AI responded to ticket ${ticket._id} ` +
+            `(${ragResult.has_context ? "with" : "without"} knowledge context, ` +
+            `model: ${ragResult.model}, provider: ${ragResult.provider})`
+        );
+    } catch (err) {
+        // Top-level safety net — never let AI errors propagate up.
+        console.error(`[RAG] Unexpected error in generateAIResponse:`, err);
+    }
+}
+
+
+// ---------------------------------------------------------------------------
+// POST /api/chat/:ticketId/messages
+// ---------------------------------------------------------------------------
+
 export async function sendMessage(req, res) {
     try {
         const { ticketId } = req.params;
@@ -70,6 +192,7 @@ export async function sendMessage(req, res) {
 
         const { ticket, senderType } = resolved;
 
+        // Save the human message.
         const message = await createMessage({
             tenantId: ticket.tenantId,
             ticketId: ticket._id,
@@ -79,26 +202,35 @@ export async function sendMessage(req, res) {
             attachments: Array.isArray(attachments) ? attachments : [],
         });
 
-        // AI_HOOK: After saving human message, trigger AI analysis/response
-        // The AI service would call createMessage with senderType "ai" and
-        // emit it back via Socket.IO. Example:
-        //
-        // const aiResponse = await aiService.generateResponse({ ticket, message, context });
-        // const aiMsg = await createMessage({ ..., senderType: "ai", content: aiResponse });
-        // req.io.to(`ticket:${ticketId}`).emit("new_message", aiMsg);
-
-        // Emit to Socket.IO room so all connected clients get real-time update
+        // Emit the human message via Socket.IO immediately.
         if (req.io) {
             req.io.to(`ticket:${ticketId}`).emit("new_message", message);
         }
 
-        return res.status(201).json({ message });
+        // Send HTTP 201 response right away — don't make the user wait for AI.
+        res.status(201).json({ message });
+
+        // Trigger AI response in the background ONLY for customer messages.
+        // Agent messages (owner/admin/agent roles) do NOT get auto-responded.
+        if (senderType === "customer") {
+            generateAIResponse({
+                ticket,
+                userMessage: content.trim(),
+                io: req.io,
+            });
+            // Note: intentionally not awaited.
+        }
+
     } catch (error) {
         console.error("SEND MESSAGE ERROR:", error);
         return res.status(500).json({ message: "Failed to send message" });
     }
 }
 
+
+// ---------------------------------------------------------------------------
+// GET /api/chat/:ticketId/messages
+// ---------------------------------------------------------------------------
 
 export async function fetchMessages(req, res) {
     try {
@@ -129,6 +261,10 @@ export async function fetchMessages(req, res) {
     }
 }
 
+
+// ---------------------------------------------------------------------------
+// GET /api/chat/:ticketId/analyze
+// ---------------------------------------------------------------------------
 
 export async function analyzeTicketHandler(req, res) {
     try {

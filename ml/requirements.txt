@@ -4,7 +4,7 @@ uvicorn[standard]
 pydantic-settings
 python-multipart
 httpx
-qdrant-client
+qdrant-client[fastembed]
 pypdf
 python-docx
 tiktoken

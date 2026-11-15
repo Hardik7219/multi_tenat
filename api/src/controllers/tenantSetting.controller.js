@@ -1,7 +1,9 @@
 
+import path from "path";
 import mongoose from "mongoose";
 import { Tenancy } from "../models/tenancy.model.js";
 import { TenantDocument } from "../models/tenantDocument.model.js";
+import { ingestDocument, deleteDocumentVectors } from "../services/rag.service.js";
 
 const DEFAULT_SETTINGS = {
     kind: "settings",
@@ -159,17 +161,17 @@ export async function updateTenantSettings(req, res) {
             ],
         };
 
-        for (const [path, value] of Object.entries(update)) {
-            const [section, field] = path.split(".");
+        for (const [path_, value] of Object.entries(update)) {
+            const [section, field] = path_.split(".");
             if (!allowedFields[section]?.includes(field)) {
                 return res.status(400).json({
-                    message: `Unsupported setting: ${path}`,
+                    message: `Unsupported setting: ${path_}`,
                 });
             }
 
             if (typeof value !== "string" && typeof value !== "boolean") {
                 return res.status(400).json({
-                    message: `Invalid value for ${path}`,
+                    message: `Invalid value for ${path_}`,
                 });
             }
         }
@@ -240,22 +242,99 @@ export async function getTenantDocuments(req, res) {
 }
 
 // POST /api/tenant-settings/:tenantId/documents
-// Creates metadata for a file that has already been uploaded to trusted storage.
+// Handles multipart file upload via multer middleware (set in route).
+// After saving the MongoDB record, triggers async RAG ingestion.
 export async function createTenantDocument(req, res) {
     try {
         const result = await verifyOwner(req.params.tenantId, req.user.id);
 
         if (result.error) {
+            // If multer stored the file and auth fails, clean it up.
+            if (req.file?.path) {
+                import("fs").then(({ unlinkSync }) => {
+                    try { unlinkSync(req.file.path); } catch (_) {}
+                });
+            }
             return res.status(result.status).json({ message: result.error });
         }
 
-        const {
-            originalName,
-            storageKey,
-            fileUrl,
-            mimeType,
-            size,
-        } = req.body;
+        // ---- File upload path (multer) ----
+        if (req.file) {
+            // File was uploaded via multipart/form-data.
+            const { originalname, mimetype, size, path: filePath } = req.file;
+
+            const allowedMimeTypes = [
+                "application/pdf",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "text/plain",
+            ];
+
+            if (!allowedMimeTypes.includes(mimetype)) {
+                import("fs").then(({ unlinkSync }) => {
+                    try { unlinkSync(filePath); } catch (_) {}
+                });
+                return res.status(400).json({ message: "Unsupported file type" });
+            }
+
+            // Save document metadata to MongoDB.
+            const document = await TenantDocument.create({
+                tenantId: req.params.tenantId,
+                kind: "knowledge",
+                document: {
+                    originalName: originalname.trim().slice(0, 255),
+                    storageKey: path.basename(filePath),
+                    fileUrl: "",
+                    mimeType: mimetype,
+                    size,
+                    processingStatus: "processing",
+                },
+            });
+
+            // Respond immediately — ingestion is async.
+            res.status(201).json({
+                message: "Document uploaded. Ingestion started.",
+                document,
+            });
+
+            // ---- Trigger RAG ingestion in the background ----
+            const absoluteFilePath = path.resolve(filePath);
+            const tenantId = req.params.tenantId;
+            const documentId = document._id.toString();
+
+            ingestDocument(tenantId, documentId, absoluteFilePath)
+                .then(async (result) => {
+                    await TenantDocument.updateOne(
+                        { _id: document._id },
+                        {
+                            $set: {
+                                "document.processingStatus": "completed",
+                                "document.extractedText": `${result.total_chunks} chunks, ${result.total_tokens} tokens`,
+                            },
+                        }
+                    );
+                    console.log(
+                        `[RAG] Ingested document ${documentId} for tenant ${tenantId}: ` +
+                        `${result.total_chunks} chunks, ${result.total_tokens} tokens`
+                    );
+                })
+                .catch(async (err) => {
+                    console.error(`[RAG] Ingestion failed for document ${documentId}:`, err.message);
+                    await TenantDocument.updateOne(
+                        { _id: document._id },
+                        {
+                            $set: {
+                                "document.processingStatus": "failed",
+                                "document.errorMessage": err.message.slice(0, 500),
+                            },
+                        }
+                    ).catch(() => {});
+                });
+
+            return; // Response already sent.
+        }
+
+        // ---- Metadata-only path (file already uploaded to external storage) ----
+        const { originalName, storageKey, fileUrl, mimeType, size } = req.body;
 
         if (
             typeof originalName !== "string" ||
@@ -278,9 +357,7 @@ export async function createTenantDocument(req, res) {
         ];
 
         if (!allowedMimeTypes.includes(mimeType)) {
-            return res.status(400).json({
-                message: "Unsupported document type",
-            });
+            return res.status(400).json({ message: "Unsupported document type" });
         }
 
         const document = await TenantDocument.create({
@@ -328,19 +405,36 @@ export async function deleteTenantDocument(req, res) {
         });
 
         if (!document) {
-            return res.status(404).json({
-                message: "Document not found",
+            return res.status(404).json({ message: "Document not found" });
+        }
+
+        // ---- Delete the physical file if it was uploaded locally ----
+        if (document.document?.storageKey) {
+            const filePath = path.resolve(
+                "uploads",
+                req.params.tenantId,
+                document.document.storageKey
+            );
+            import("fs").then(({ unlinkSync }) => {
+                try { unlinkSync(filePath); } catch (_) {}
             });
         }
 
-        // TODO: Delete the physical file from the configured storage provider.
-        return res.status(200).json({
-            message: "Document metadata deleted",
-        });
+        // ---- Remove vectors from Qdrant (non-fatal if it fails) ----
+        deleteDocumentVectors(req.params.tenantId, req.params.documentId)
+            .then(() => {
+                console.log(`[RAG] Vectors deleted for document ${req.params.documentId}`);
+            })
+            .catch((err) => {
+                console.error(
+                    `[RAG] Vector deletion failed for document ${req.params.documentId}:`,
+                    err.message
+                );
+            });
+
+        return res.status(200).json({ message: "Document deleted" });
     } catch (error) {
         console.error("DELETE TENANT DOCUMENT ERROR:", error);
-        return res.status(500).json({
-            message: "Failed to delete document",
-        });
+        return res.status(500).json({ message: "Failed to delete document" });
     }
 }
