@@ -1,7 +1,7 @@
 
 import express from "express";
 import { authenticate } from "../middleware/auth.middleware.js";
-import { uploadMiddleware } from "../middleware/upload.middleware.js";
+import { uploadMiddleware, uploadErrorHandler } from "../middleware/upload.middleware.js";
 
 import {
     getTenantSettings,
@@ -25,21 +25,11 @@ router.get("/:tenantId/documents", getTenantDocuments);
 //   b) application/json with metadata only (external storage)
 router.post(
     "/:tenantId/documents",
-    (req, res, next) => {
-        // Only run multer when Content-Type is multipart.
-        const contentType = req.headers["content-type"] || "";
-        if (contentType.includes("multipart/form-data")) {
-            return uploadMiddleware.single("file")(req, res, (err) => {
-                if (err) {
-                    return res.status(400).json({ message: err.message });
-                }
-                next();
-            });
-        }
-        next();
-    },
+    /* your existing auth/permission middleware, */
+    uploadMiddleware.single("file"),   // form field name = "file"
     createTenantDocument
 );
+router.use(uploadErrorHandler);
 
 router.delete("/:tenantId/documents/:documentId", deleteTenantDocument);
 

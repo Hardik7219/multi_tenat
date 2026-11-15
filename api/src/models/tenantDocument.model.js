@@ -67,6 +67,9 @@ const tenantDocumentSchema = new mongoose.Schema(
             extractedText: { type: String, default: "" },
             errorMessage: { type: String, default: "" },
         },
+        storagePath: String,   // absolute path on the API side
+        processingStatus: { type: String, enum: ["pending", "processing", "ready", "failed"], default: "pending" },
+        errorMessage: String,
     },
     { timestamps: true }
 );

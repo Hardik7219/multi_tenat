@@ -156,7 +156,7 @@ class QdrantService:
         )
 
         try:
-            results = await client.search(
+            results = await self.client.query_points(
                 collection_name=self.collection_name,
                 query_vector=query_vector,
                 query_filter=tenant_filter,
@@ -170,7 +170,7 @@ class QdrantService:
             ) from exc
 
         hits = []
-        for hit in results:
+        for hit in response.points:
             hits.append({
                 "score": hit.score,
                 "text": hit.payload.get("text", ""),

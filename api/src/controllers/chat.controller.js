@@ -10,6 +10,7 @@ import {
     analyzeTicket,
 } from "../services/chat.service.js";
 import { queryRAG } from "../services/rag.service.js";
+import { generateAIResponse } from "../services/aiReply.service.js";
 
 
 // ---------------------------------------------------------------------------
@@ -75,92 +76,92 @@ async function resolveTicketAndAuth(ticketId, userId) {
  * @param {string} userMessage - The customer's message text
  * @param {Object} io          - Socket.IO server instance (from req.io)
  */
-async function generateAIResponse({ ticket, userMessage, io }) {
-    try {
-        // 1. Fetch the tenant's settings from MongoDB.
-        const [tenantSettings, tenancy] = await Promise.all([
-            TenantDocument.findOne({
-                tenantId: ticket.tenantId,
-                kind: "settings",
-            }).lean(),
-            Tenancy.findById(ticket.tenantId).select("name").lean(),
-        ]);
+// async function generateAIResponse({ ticket, userMessage, io }) {
+//     try {
+//         // 1. Fetch the tenant's settings from MongoDB.
+//         const [tenantSettings, tenancy] = await Promise.all([
+//             TenantDocument.findOne({
+//                 tenantId: ticket.tenantId,
+//                 kind: "settings",
+//             }).lean(),
+//             Tenancy.findById(ticket.tenantId).select("name").lean(),
+//         ]);
 
-        // 2. Skip if AI is disabled or autoRespond is turned off.
-        if (!tenantSettings) {
-            console.log(`[RAG] No settings found for tenant ${ticket.tenantId} — skipping AI.`);
-            return;
-        }
-        if (!tenantSettings.ai?.enabled) {
-            console.log(`[RAG] AI disabled for tenant ${ticket.tenantId} — skipping.`);
-            return;
-        }
-        if (!tenantSettings.ai?.autoRespond) {
-            console.log(`[RAG] autoRespond=false for tenant ${ticket.tenantId} — skipping.`);
-            return;
-        }
+//         // 2. Skip if AI is disabled or autoRespond is turned off.
+//         if (!tenantSettings) {
+//             console.log(`[RAG] No settings found for tenant ${ticket.tenantId} — skipping AI.`);
+//             return;
+//         }
+//         if (!tenantSettings.ai?.enabled) {
+//             console.log(`[RAG] AI disabled for tenant ${ticket.tenantId} — skipping.`);
+//             return;
+//         }
+//         if (!tenantSettings.ai?.autoRespond) {
+//             console.log(`[RAG] autoRespond=false for tenant ${ticket.tenantId} — skipping.`);
+//             return;
+//         }
 
-        // 3. Build conversation history from recent messages (exclude the message just sent).
-        const recentMessages = await TicketMessage.find({ ticketId: ticket._id })
-            .sort({ createdAt: -1 })
-            .limit(11) // 10 prior + 1 (the current message we just saved)
-            .lean();
+//         // 3. Build conversation history from recent messages (exclude the message just sent).
+//         const recentMessages = await TicketMessage.find({ ticketId: ticket._id })
+//             .sort({ createdAt: -1 })
+//             .limit(11) // 10 prior + 1 (the current message we just saved)
+//             .lean();
 
-        // Reverse to chronological, drop the last (current) message.
-        const history = recentMessages
-            .reverse()
-            .slice(0, -1)
-            .map((m) => ({
-                role: m.senderType === "customer" ? "user" : "assistant",
-                content: m.content,
-            }));
+//         // Reverse to chronological, drop the last (current) message.
+//         const history = recentMessages
+//             .reverse()
+//             .slice(0, -1)
+//             .map((m) => ({
+//                 role: m.senderType === "customer" ? "user" : "assistant",
+//                 content: m.content,
+//             }));
 
-        // 4. Call RAG ML service.
-        const tenantName = tenancy?.name || "this organization";
-        let ragResult;
-        try {
-            ragResult = await queryRAG(
-                ticket.tenantId.toString(),
-                userMessage,
-                tenantSettings,
-                tenantName,
-                history
-            );
-        } catch (ragErr) {
-            console.error(`[RAG] Query failed for ticket ${ticket._id}:`, ragErr.message);
-            return; // Fail silently — do not create a broken AI message.
-        }
+//         // 4. Call RAG ML service.
+//         const tenantName = tenancy?.name || "this organization";
+//         let ragResult;
+//         try {
+//             ragResult = await queryRAG(
+//                 ticket.tenantId.toString(),
+//                 userMessage,
+//                 tenantSettings,
+//                 tenantName,
+//                 history
+//             );
+//         } catch (ragErr) {
+//             console.error(`[RAG] Query failed for ticket ${ticket._id}:`, ragErr.message);
+//             return; // Fail silently — do not create a broken AI message.
+//         }
 
-        const answer = ragResult?.answer;
-        if (!answer || !answer.trim()) {
-            console.warn(`[RAG] Empty answer returned for ticket ${ticket._id}`);
-            return;
-        }
+//         const answer = ragResult?.answer;
+//         if (!answer || !answer.trim()) {
+//             console.warn(`[RAG] Empty answer returned for ticket ${ticket._id}`);
+//             return;
+//         }
 
-        // 5. Save AI message to MongoDB.
-        const aiMessage = await createMessage({
-            tenantId: ticket.tenantId,
-            ticketId: ticket._id,
-            senderId: null,
-            senderType: "ai",
-            content: answer.trim(),
-        });
+//         // 5. Save AI message to MongoDB.
+//         const aiMessage = await createMessage({
+//             tenantId: ticket.tenantId,
+//             ticketId: ticket._id,
+//             senderId: null,
+//             senderType: "ai",
+//             content: answer.trim(),
+//         });
 
-        // 6. Emit via Socket.IO so connected browsers receive it in real time.
-        if (io) {
-            io.to(`ticket:${ticket._id}`).emit("new_message", aiMessage);
-        }
+//         // 6. Emit via Socket.IO so connected browsers receive it in real time.
+//         if (io) {
+//             io.to(`ticket:${ticket._id}`).emit("new_message", aiMessage);
+//         }
 
-        console.log(
-            `[RAG] AI responded to ticket ${ticket._id} ` +
-            `(${ragResult.has_context ? "with" : "without"} knowledge context, ` +
-            `model: ${ragResult.model}, provider: ${ragResult.provider})`
-        );
-    } catch (err) {
-        // Top-level safety net — never let AI errors propagate up.
-        console.error(`[RAG] Unexpected error in generateAIResponse:`, err);
-    }
-}
+//         console.log(
+//             `[RAG] AI responded to ticket ${ticket._id} ` +
+//             `(${ragResult.has_context ? "with" : "without"} knowledge context, ` +
+//             `model: ${ragResult.model}, provider: ${ragResult.provider})`
+//         );
+//     } catch (err) {
+//         // Top-level safety net — never let AI errors propagate up.
+//         console.error(`[RAG] Unexpected error in generateAIResponse:`, err);
+//     }
+// }
 
 
 // ---------------------------------------------------------------------------
@@ -215,10 +216,11 @@ export async function sendMessage(req, res) {
         if (senderType === "customer") {
             generateAIResponse({
                 ticket,
+                userMessageId: message._id,
                 userMessage: content.trim(),
                 io: req.io,
-            });
-            // Note: intentionally not awaited.
+                createMessage,
+            }).catch((err) => console.error("[RAG] AI response failed:", err.message));
         }
 
     } catch (error) {

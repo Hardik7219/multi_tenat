@@ -1,7 +1,9 @@
 import { Tenancy } from "../models/tenancy.model.js";
 import { User } from "../models/user.model.js";
 import { deleteTenantVectors } from "../services/rag.service.js";
-
+import fs from "fs/promises";
+import path from "path";
+import { UPLOADS_ROOT } from "../middleware/upload.middleware.js";
 
 export async function createTenancy(req, res) {
     try {
@@ -184,7 +186,7 @@ export async function deleteTenancy(req, res) {
         }
 
         const tenancy = await Tenancy.findByIdAndDelete(tenantId);
-
+        
         if (!tenancy) {
             return res.status(404).json({
                 message: "Organization not found",

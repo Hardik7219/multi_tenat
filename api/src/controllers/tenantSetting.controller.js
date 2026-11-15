@@ -3,6 +3,7 @@ import path from "path";
 import mongoose from "mongoose";
 import { Tenancy } from "../models/tenancy.model.js";
 import { TenantDocument } from "../models/tenantDocument.model.js";
+import fs from "fs/promises";
 import { ingestDocument, deleteDocumentVectors } from "../services/rag.service.js";
 
 const DEFAULT_SETTINGS = {
@@ -247,12 +248,13 @@ export async function getTenantDocuments(req, res) {
 export async function createTenantDocument(req, res) {
     try {
         const result = await verifyOwner(req.params.tenantId, req.user.id);
+        if (!req.file) return res.status(400).json({ success: false, message: "File is required" });
 
         if (result.error) {
             // If multer stored the file and auth fails, clean it up.
             if (req.file?.path) {
                 import("fs").then(({ unlinkSync }) => {
-                    try { unlinkSync(req.file.path); } catch (_) {}
+                    try { unlinkSync(req.file.path); } catch (_) { }
                 });
             }
             return res.status(result.status).json({ message: result.error });
@@ -271,7 +273,7 @@ export async function createTenantDocument(req, res) {
 
             if (!allowedMimeTypes.includes(mimetype)) {
                 import("fs").then(({ unlinkSync }) => {
-                    try { unlinkSync(filePath); } catch (_) {}
+                    try { unlinkSync(filePath); } catch (_) { }
                 });
                 return res.status(400).json({ message: "Unsupported file type" });
             }
@@ -281,20 +283,17 @@ export async function createTenantDocument(req, res) {
                 tenantId: req.params.tenantId,
                 kind: "knowledge",
                 document: {
-                    originalName: originalname.trim().slice(0, 255),
-                    storageKey: path.basename(filePath),
-                    fileUrl: "",
-                    mimeType: mimetype,
-                    size,
+                    originalName: req.file.originalname,
+                    mimeType: req.file.mimetype,
+                    size: req.file.size,
+                    storagePath: req.file.path,
                     processingStatus: "processing",
                 },
             });
 
             // Respond immediately — ingestion is async.
-            res.status(201).json({
-                message: "Document uploaded. Ingestion started.",
-                document,
-            });
+            res.status(201).json({ success: true, data: document });
+
 
             // ---- Trigger RAG ingestion in the background ----
             const absoluteFilePath = path.resolve(filePath);
@@ -327,7 +326,7 @@ export async function createTenantDocument(req, res) {
                                 "document.errorMessage": err.message.slice(0, 500),
                             },
                         }
-                    ).catch(() => {});
+                    ).catch(() => { });
                 });
 
             return; // Response already sent.
@@ -403,7 +402,9 @@ export async function deleteTenantDocument(req, res) {
             tenantId: req.params.tenantId,
             kind: "knowledge",
         });
-
+        if (deleted?.document?.storagePath) {
+            fs.unlink(deleted.document.storagePath).catch(() => { });
+        }
         if (!document) {
             return res.status(404).json({ message: "Document not found" });
         }
@@ -416,21 +417,14 @@ export async function deleteTenantDocument(req, res) {
                 document.document.storageKey
             );
             import("fs").then(({ unlinkSync }) => {
-                try { unlinkSync(filePath); } catch (_) {}
+                try { unlinkSync(filePath); } catch (_) { }
             });
         }
 
         // ---- Remove vectors from Qdrant (non-fatal if it fails) ----
-        deleteDocumentVectors(req.params.tenantId, req.params.documentId)
-            .then(() => {
-                console.log(`[RAG] Vectors deleted for document ${req.params.documentId}`);
-            })
-            .catch((err) => {
-                console.error(
-                    `[RAG] Vector deletion failed for document ${req.params.documentId}:`,
-                    err.message
-                );
-            });
+        deleteDocumentVectors(req.params.tenantId, req.params.documentId).catch((err) =>
+            console.error("[RAG] Vector deletion failed:", err.message)
+        );
 
         return res.status(200).json({ message: "Document deleted" });
     } catch (error) {
