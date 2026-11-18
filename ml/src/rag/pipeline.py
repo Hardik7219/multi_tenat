@@ -86,7 +86,7 @@ class RAGPipeline:
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
             )
-        except (ValueError, Exception) as exc:
+        except Exception as exc:
             raise RAGPipelineError(f"Document processing failed: {exc}") from exc
 
         chunks = processed["chunks"]

@@ -16,7 +16,6 @@ const tenantDocumentSchema = new mongoose.Schema(
             required: true,
         },
 
-        // Used only when kind === "settings"
         profile: {
             description: { type: String, default: "", trim: true },
             category: { type: String, default: "", trim: true },
@@ -52,7 +51,6 @@ const tenantDocumentSchema = new mongoose.Schema(
             additionalRules: { type: String, default: "" },
         },
 
-        // Used only when kind === "knowledge"
         document: {
             originalName: { type: String, default: "" },
             storageKey: { type: String, default: "" },
@@ -67,15 +65,13 @@ const tenantDocumentSchema = new mongoose.Schema(
             extractedText: { type: String, default: "" },
             errorMessage: { type: String, default: "" },
         },
-        storagePath: String,   // absolute path on the API side
+        storagePath: String,   
         processingStatus: { type: String, enum: ["pending", "processing", "ready", "failed"], default: "pending" },
         errorMessage: String,
     },
     { timestamps: true }
 );
 
-// One settings record per organization.
-// Knowledge records can have multiple documents.
 tenantDocumentSchema.index(
     { tenantId: 1, kind: 1 },
     {

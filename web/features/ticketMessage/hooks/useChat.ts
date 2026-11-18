@@ -29,9 +29,13 @@ export function useChat({ ticketId, autoAnalyze = true }: UseChatOptions) {
     const [analysis, setAnalysis] = useState<TicketAnalysis | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+    // Shows a "AI is thinking…" indicator while waiting for RAG response
+    const [aiTyping, setAiTyping] = useState(false);
 
     const socketRef = useRef<Socket | null>(null);
     const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Timer to auto-dismiss AI typing indicator if no response arrives in 60s
+    const aiTypingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const loadMessages = useCallback(async () => {
         if (sessionStatus === "loading" || !accessToken || !ticketId) return;
@@ -80,9 +84,19 @@ export function useChat({ ticketId, autoAnalyze = true }: UseChatOptions) {
 
         socket.on("new_message", (msg: TicketMessage) => {
             setMessages((prev) => {
+                // De-duplicate by _id
                 if (prev.some((m) => m._id === msg._id)) return prev;
                 return [...prev, msg];
             });
+
+            // If we receive an AI message, clear the AI typing indicator
+            if (msg.senderType === "ai") {
+                setAiTyping(false);
+                if (aiTypingTimerRef.current) {
+                    clearTimeout(aiTypingTimerRef.current);
+                    aiTypingTimerRef.current = null;
+                }
+            }
         });
 
         socket.on(
@@ -122,6 +136,16 @@ export function useChat({ ticketId, autoAnalyze = true }: UseChatOptions) {
                     if (prev.some((m) => m._id === msg._id)) return prev;
                     return [...prev, msg];
                 });
+
+                // Show "AI is thinking…" indicator right after the customer sends.
+                // It will be cleared when the AI message arrives via Socket.IO,
+                // or after 60s timeout (in case the ML service is slow/unavailable).
+                setAiTyping(true);
+                if (aiTypingTimerRef.current) clearTimeout(aiTypingTimerRef.current);
+                aiTypingTimerRef.current = setTimeout(() => {
+                    setAiTyping(false);
+                    aiTypingTimerRef.current = null;
+                }, 60_000);
 
                 return { success: true, message: msg };
             } catch (err) {
@@ -163,6 +187,7 @@ export function useChat({ ticketId, autoAnalyze = true }: UseChatOptions) {
         analysis,
         isConnected,
         typingUsers,
+        aiTyping,
         sendMessage,
         emitTyping,
         refreshAnalysis,

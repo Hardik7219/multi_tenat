@@ -1,18 +1,14 @@
-// api/src/services/rag.service.js
 import path from "path";
 
-// Read env lazily so it works regardless of when dotenv loads.
 const cfg = () => ({
     url: process.env.ML_SERVICE_URL || "http://127.0.0.1:8001",
     token: process.env.ML_INTERNAL_TOKEN,
     timeoutMs: Number(process.env.ML_TIMEOUT_MS || 120000),
     apiUploadsRoot: path.resolve(process.env.UPLOADS_ROOT || "uploads"),
-    // Where the SAME uploads dir is mounted inside the ML container.
-    // Local dev (same machine): leave unset, it defaults to the API path.
+
     mlUploadsRoot: process.env.ML_UPLOADS_ROOT || null,
 });
 
-/** Translate a path on the API filesystem to the path the ML service sees. */
 export function toMlPath(absPath) {
     const { apiUploadsRoot, mlUploadsRoot } = cfg();
     if (!mlUploadsRoot) return absPath;

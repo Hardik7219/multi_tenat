@@ -26,7 +26,7 @@ def extract_text(file_path: str | Path) -> str:
         DocumentExtractionError: If the format is unsupported
         or extraction fails.
     """
-
+    print("file path",file_path)
     path = Path(file_path)
 
     if not path.exists() or not path.is_file():

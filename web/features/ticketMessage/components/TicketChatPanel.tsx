@@ -14,9 +14,8 @@ interface TicketChatPanelProps {
  * Self-contained chat panel to drop into the ticket detail page.
  * Wire up:  <TicketChatPanel ticketId={ticket._id} />
  *
- * AI_HOOK: When an AI pipeline is added, the AI messages will arrive
- * via Socket.IO "new_message" events with senderType "ai".
- * No changes needed here — the hook and list already handle them.
+ * AI messages arrive via Socket.IO "new_message" events with senderType "ai".
+ * While the AI is generating, an "AI is thinking..." indicator is shown.
  */
 export function TicketChatPanel({ ticketId }: TicketChatPanelProps) {
     const { data: session } = useSession();
@@ -30,6 +29,7 @@ export function TicketChatPanel({ ticketId }: TicketChatPanelProps) {
         analysis,
         isConnected,
         typingUsers,
+        aiTyping,
         sendMessage,
         emitTyping,
     } = useChat({ ticketId, autoAnalyze: true });
@@ -56,6 +56,7 @@ export function TicketChatPanel({ ticketId }: TicketChatPanelProps) {
                 <ChatMessageList
                     messages={messages}
                     typingUsers={typingUsers}
+                    aiTyping={aiTyping}
                     currentUserId={currentUserId}
                 />
             )}
@@ -63,7 +64,7 @@ export function TicketChatPanel({ ticketId }: TicketChatPanelProps) {
             <ChatInput
                 onSend={sendMessage}
                 onTyping={emitTyping}
-                disabled={!isConnected && messages.length === 0}
+                disabled={sending}
                 sending={sending}
             />
         </div>

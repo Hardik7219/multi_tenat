@@ -50,7 +50,7 @@ function MessageBubble({ message, currentUserId }: MessageBubbleProps) {
                 {senderLabel(message.senderType)}
             </span>
 
-            <p className="whitespace-pre-wrap wrap-break-word">{message.content}</p>
+            <p className="whitespace-pre-wrap break-words">{message.content}</p>
 
             <span
                 className={`mt-1 text-[10px] ${
@@ -62,6 +62,28 @@ function MessageBubble({ message, currentUserId }: MessageBubbleProps) {
                     minute: "2-digit",
                 })}
             </span>
+        </div>
+    );
+}
+
+
+// "AI is thinking…" animated dots with purple AI styling
+function AITypingIndicator() {
+    return (
+        <div className="mr-auto flex max-w-[75%] flex-col rounded-2xl border border-purple-500/25 bg-purple-500/15 px-4 py-3">
+            <span className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-purple-400">
+                AI Assistant
+            </span>
+            <div className="flex items-center gap-1.5 py-1">
+                {[0, 1, 2].map((i) => (
+                    <span
+                        key={i}
+                        className="h-2 w-2 rounded-full bg-purple-400/60 animate-bounce"
+                        style={{ animationDelay: `${i * 0.15}s` }}
+                    />
+                ))}
+                <span className="ml-1 text-xs text-purple-300/60">thinking…</span>
+            </div>
         </div>
     );
 }
@@ -85,21 +107,23 @@ function TypingDots() {
 interface ChatMessageListProps {
     messages: TicketMessage[];
     typingUsers: Set<string>;
+    aiTyping?: boolean;
     currentUserId?: string;
 }
 
 export function ChatMessageList({
     messages,
     typingUsers,
+    aiTyping = false,
     currentUserId,
 }: ChatMessageListProps) {
     const bottomRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages, typingUsers]);
+    }, [messages, typingUsers, aiTyping]);
 
-    if (messages.length === 0 && typingUsers.size === 0) {
+    if (messages.length === 0 && typingUsers.size === 0 && !aiTyping) {
         return (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
                 <div className="text-4xl">💬</div>
@@ -107,7 +131,7 @@ export function ChatMessageList({
                     No messages yet
                 </p>
                 <p className="text-xs text-white/30">
-                    Be the first to start the conversation.
+                    Send a message to get started. The AI assistant will respond automatically.
                 </p>
             </div>
         );
@@ -123,7 +147,11 @@ export function ChatMessageList({
                 />
             ))}
 
+            {/* Human agent typing indicator */}
             {typingUsers.size > 0 && <TypingDots />}
+
+            {/* AI generating indicator — shows while waiting for RAG response */}
+            {aiTyping && <AITypingIndicator />}
 
             <div ref={bottomRef} />
         </div>

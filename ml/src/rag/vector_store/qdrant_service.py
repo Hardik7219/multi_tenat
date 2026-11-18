@@ -8,7 +8,6 @@ from qdrant_client.models import (
     Filter,
     FieldCondition,
     MatchValue,
-    SearchRequest,
 )
 import uuid
 
@@ -124,6 +123,7 @@ class QdrantService:
 
         return len(points)
 
+
     async def search(
         self,
         tenant_id: str,
@@ -131,19 +131,16 @@ class QdrantService:
         top_k: int = 5,
         score_threshold: float = 0.4,
     ) -> list[dict[str, Any]]:
-        """
-        Search for the most similar chunks for a given query vector,
-        strictly filtered by tenant_id.
 
-        Args:
-            tenant_id: Only return results belonging to this tenant.
-            query_vector: The embedded query vector.
-            top_k: Maximum number of results to return.
-            score_threshold: Minimum cosine similarity score to include.
+        if len(query_vector) != self.embedding_dimensions:
+            raise QdrantServiceError(
+                f"Expected {self.embedding_dimensions} dimensions, "
+                f"received {len(query_vector)}"
+            )
 
-        Returns:
-            List of matching payloads ordered by relevance score (desc).
-        """
+        if top_k <= 0:
+            raise QdrantServiceError("top_k must be greater than zero")
+
         client = await self._get_client()
 
         tenant_filter = Filter(
@@ -156,9 +153,9 @@ class QdrantService:
         )
 
         try:
-            results = await self.client.query_points(
+            results = await client.query_points(
                 collection_name=self.collection_name,
-                query_vector=query_vector,
+                query=query_vector,
                 query_filter=tenant_filter,
                 limit=top_k,
                 score_threshold=score_threshold,
@@ -170,16 +167,20 @@ class QdrantService:
             ) from exc
 
         hits = []
-        for hit in response.points:
+
+        for hit in results.points:
+            payload = hit.payload or {}
+
             hits.append({
                 "score": hit.score,
-                "text": hit.payload.get("text", ""),
-                "document_id": hit.payload.get("document_id", ""),
-                "chunk_index": hit.payload.get("chunk_index", 0),
-                "tenant_id": hit.payload.get("tenant_id", ""),
+                "text": payload.get("text", ""),
+                "document_id": payload.get("document_id", ""),
+                "chunk_index": payload.get("chunk_index", 0),
+                "tenant_id": payload.get("tenant_id", ""),
             })
 
         return hits
+
 
     async def delete_document_chunks(
         self,

@@ -193,7 +193,7 @@ export async function deleteTenancy(req, res) {
             });
         }
 
-        // Remove all RAG vectors for this tenant from Qdrant (non-fatal).
+
         deleteTenantVectors(tenantId)
             .then(() => console.log(`[RAG] Vectors cleaned up for tenant ${tenantId}`))
             .catch((err) => console.error(`[RAG] Vector cleanup failed for tenant ${tenantId}:`, err.message));

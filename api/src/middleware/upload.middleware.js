@@ -1,4 +1,3 @@
-// api/src/middleware/upload.middleware.js
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -14,7 +13,6 @@ export const UPLOADS_ROOT = path.resolve(process.env.UPLOADS_ROOT || "uploads");
 const storage = multer.diskStorage({
     destination: (req, _file, cb) => {
         const { tenantId } = req.params;
-        // Prevent path traversal: tenantId must be a Mongo ObjectId.
         if (!/^[a-f\d]{24}$/i.test(tenantId)) return cb(new Error("Invalid tenantId"));
         const dir = path.join(UPLOADS_ROOT, tenantId);
         fs.mkdirSync(dir, { recursive: true });
@@ -34,10 +32,9 @@ const fileFilter = (_req, file, cb) => {
 export const uploadMiddleware = multer({
     storage,
     fileFilter,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+    limits: { fileSize: 10 * 1024 * 1024 }, 
 });
 
-// Turns multer / file-type errors into clean 400s. Register after the routes.
 export function uploadErrorHandler(err, _req, res, next) {
     if (err instanceof multer.MulterError || err?.message?.startsWith("Only PDF")) {
         return res.status(400).json({ success: false, message: err.message });

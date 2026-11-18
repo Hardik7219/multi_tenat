@@ -86,7 +86,6 @@ function validateSettingsPayload(body) {
     return null;
 }
 
-// GET /api/tenant-settings/:tenantId
 export async function getTenantSettings(req, res) {
     try {
         const result = await verifyOwner(req.params.tenantId, req.user.id);
@@ -117,7 +116,6 @@ export async function getTenantSettings(req, res) {
     }
 }
 
-// PATCH /api/tenant-settings/:tenantId
 export async function updateTenantSettings(req, res) {
     try {
         const result = await verifyOwner(req.params.tenantId, req.user.id);
@@ -142,7 +140,6 @@ export async function updateTenantSettings(req, res) {
             }
         }
 
-        // Whitelist nested fields to prevent arbitrary schema updates.
         const allowedFields = {
             profile: [
                 "description", "category", "website",
@@ -216,7 +213,6 @@ export async function updateTenantSettings(req, res) {
     }
 }
 
-// GET /api/tenant-settings/:tenantId/documents
 export async function getTenantDocuments(req, res) {
     try {
         const result = await verifyOwner(req.params.tenantId, req.user.id);
@@ -242,16 +238,12 @@ export async function getTenantDocuments(req, res) {
     }
 }
 
-// POST /api/tenant-settings/:tenantId/documents
-// Handles multipart file upload via multer middleware (set in route).
-// After saving the MongoDB record, triggers async RAG ingestion.
 export async function createTenantDocument(req, res) {
     try {
         const result = await verifyOwner(req.params.tenantId, req.user.id);
         if (!req.file) return res.status(400).json({ success: false, message: "File is required" });
 
         if (result.error) {
-            // If multer stored the file and auth fails, clean it up.
             if (req.file?.path) {
                 import("fs").then(({ unlinkSync }) => {
                     try { unlinkSync(req.file.path); } catch (_) { }
@@ -260,9 +252,7 @@ export async function createTenantDocument(req, res) {
             return res.status(result.status).json({ message: result.error });
         }
 
-        // ---- File upload path (multer) ----
         if (req.file) {
-            // File was uploaded via multipart/form-data.
             const { originalname, mimetype, size, path: filePath } = req.file;
 
             const allowedMimeTypes = [
@@ -278,7 +268,6 @@ export async function createTenantDocument(req, res) {
                 return res.status(400).json({ message: "Unsupported file type" });
             }
 
-            // Save document metadata to MongoDB.
             const document = await TenantDocument.create({
                 tenantId: req.params.tenantId,
                 kind: "knowledge",
@@ -291,11 +280,9 @@ export async function createTenantDocument(req, res) {
                 },
             });
 
-            // Respond immediately — ingestion is async.
             res.status(201).json({ success: true, data: document });
 
 
-            // ---- Trigger RAG ingestion in the background ----
             const absoluteFilePath = path.resolve(filePath);
             const tenantId = req.params.tenantId;
             const documentId = document._id.toString();
@@ -329,10 +316,9 @@ export async function createTenantDocument(req, res) {
                     ).catch(() => { });
                 });
 
-            return; // Response already sent.
+            return; 
         }
 
-        // ---- Metadata-only path (file already uploaded to external storage) ----
         const { originalName, storageKey, fileUrl, mimeType, size } = req.body;
 
         if (
@@ -384,7 +370,6 @@ export async function createTenantDocument(req, res) {
     }
 }
 
-// DELETE /api/tenant-settings/:tenantId/documents/:documentId
 export async function deleteTenantDocument(req, res) {
     try {
         const result = await verifyOwner(req.params.tenantId, req.user.id);
@@ -409,7 +394,6 @@ export async function deleteTenantDocument(req, res) {
             return res.status(404).json({ message: "Document not found" });
         }
 
-        // ---- Delete the physical file if it was uploaded locally ----
         if (document.document?.storageKey) {
             const filePath = path.resolve(
                 "uploads",
@@ -421,7 +405,6 @@ export async function deleteTenantDocument(req, res) {
             });
         }
 
-        // ---- Remove vectors from Qdrant (non-fatal if it fails) ----
         deleteDocumentVectors(req.params.tenantId, req.params.documentId).catch((err) =>
             console.error("[RAG] Vector deletion failed:", err.message)
         );

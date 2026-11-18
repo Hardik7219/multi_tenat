@@ -1,20 +1,38 @@
-// api/src/services/aiReply.service.js
-// Kept out of chat.controller.js so the controller stays small.
+
 import { queryRAG } from "./rag.service.js";
 import { TenantDocument } from "../models/tenantDocument.model.js";
-import { TicketMessage } from "../models/ticketMessage.model.js"; // TODO: adjust to your real path/export
+import { TicketMessage } from "../models/ticketMessage.model.js";
+import { Tenancy } from "../models/tenancy.model.js";
 
 /**
- * Generate and broadcast an AI reply for a customer message.
- * Attach .catch() at the call site (see chat.controller patch).
+ * @param {Object}   options
+ * @param {Object}   options.ticket          - Lean Ticket document from MongoDB
+ * @param {string}   options.userMessageId   - _id of the message just sent (to exclude from history)
+ * @param {string}   options.userMessage     - The customer's message text
+ * @param {Object}   options.io              - Socket.IO server instance
+ * @param {Function} options.createMessage   - chat.service createMessage function
  */
 export async function generateAIResponse({ ticket, userMessageId, userMessage, io, createMessage }) {
     const tenantId = String(ticket.tenantId?._id ?? ticket.tenantId);
 
-    const settings = await TenantDocument.findOne({ tenantId, kind: "settings" }).lean();
-    if (!settings?.ai?.enabled || !settings?.ai?.autoRespond) return;
+    const [settings, tenancy] = await Promise.all([
+        TenantDocument.findOne({ tenantId, kind: "settings" }).lean(),
+        Tenancy.findById(tenantId).select("name").lean(),
+    ]);
 
-    // History: last 10 messages, excluding the one we're answering (by id, not position).
+    if (!settings) {
+        console.log(`[RAG] No settings found for tenant ${tenantId} — skipping AI.`);
+        return;
+    }
+    if (!settings.ai?.enabled) {
+        console.log(`[RAG] AI disabled for tenant ${tenantId} — skipping.`);
+        return;
+    }
+    if (!settings.ai?.autoRespond) {
+        console.log(`[RAG] autoRespond=false for tenant ${tenantId} — skipping.`);
+        return;
+    }
+
     const recent = await TicketMessage.find({
         ticketId: ticket._id,
         _id: { $ne: userMessageId },
@@ -25,19 +43,28 @@ export async function generateAIResponse({ ticket, userMessageId, userMessage, i
 
     const history = recent
         .reverse()
-        .filter((m) => m.content)
+        .filter((m) => m.content?.trim())
         .map((m) => ({
             role: m.senderType === "customer" ? "user" : "assistant",
             content: m.content,
         }));
 
-    const tenantName =
-        ticket.tenantId?.name || settings.profile?.name || settings.profile?.companyName || "this organization";
+    const tenantName = tenancy?.name || "this organization";
+    const tenantSettings = { ...settings, tenantName };
 
-    const ragResult = await queryRAG(tenantId, userMessage, { ...settings, tenantName }, history);
+    let ragResult;
+    try {
+        ragResult = await queryRAG(tenantId, userMessage, tenantSettings, history);
+    } catch (ragErr) {
+        console.error(`[RAG] Query failed for ticket ${ticket._id}:`, ragErr.message);
+        return; 
+    }
 
     const answer = ragResult?.answer?.trim();
-    if (!answer) return;
+    if (!answer) {
+        console.warn(`[RAG] Empty answer returned for ticket ${ticket._id}`);
+        return;
+    }
 
     const aiMessage = await createMessage({
         tenantId: ticket.tenantId,
@@ -47,5 +74,14 @@ export async function generateAIResponse({ ticket, userMessageId, userMessage, i
         content: answer,
     });
 
-    io?.to(`ticket:${ticket._id}`).emit("new_message", aiMessage);
+    if (io) {
+        io.to(`ticket:${ticket._id}`).emit("new_message", aiMessage);
+        console.log(
+            `[RAG] ✓ AI reply sent for ticket ${ticket._id} ` +
+            `(context: ${ragResult.has_context ? "yes" : "no"}, ` +
+            `model: ${ragResult.model}, provider: ${ragResult.provider})`
+        );
+    } else {
+        console.warn(`[RAG] io not available — AI message saved but NOT emitted via socket.`);
+    }
 }
