@@ -124,9 +124,7 @@ class QueryResponse(BaseModel):
     provider: str = "unknown"
 
 
-# ---------------------------------------------------------------------------
-# Delete endpoint schemas
-# ---------------------------------------------------------------------------
+
 
 class DeleteDocumentRequest(BaseModel):
     """
