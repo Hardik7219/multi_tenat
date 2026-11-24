@@ -83,14 +83,16 @@ export async function fetchAllTickets(req, res) {
 export async function fetchTenantTickets(req, res) {
     try {
 
-        const { tenantId } = req.params;        
+        const { tenantId } = req.params;
+        const userId = req.user.id;
         if (!tenantId) {
             return res.status(400).json({
                 message: "There is no Tenant",
             });
         }
         const tickets = await Ticket.find({
-            tenantId
+            _id: tenantId,
+            createdBy: userId
         })
 
         if (!tickets) {
@@ -104,7 +106,7 @@ export async function fetchTenantTickets(req, res) {
         });
     } catch (error) {
         console.log(error);
-        
+        return res.status(500).json({ message: "Failed to fetch tickets" });
     }
 }
 
